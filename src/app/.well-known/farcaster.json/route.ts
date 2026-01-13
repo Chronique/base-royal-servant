@@ -39,7 +39,7 @@ export async function GET() {
           "eip155:8453",
           "eip155:10"
         ],
-        "canonicalDomain": "https://base-royal-servant.vercel.app",
+        "canonicalDomain": "base-royal-servant.vercel.app",
         "noindex": false,
         "tags": ["base", "baseapp", "miniapp", "tools"]
       },
