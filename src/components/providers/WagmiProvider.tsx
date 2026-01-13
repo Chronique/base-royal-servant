@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { farcasterMiniApp } from "@farcaster/miniapp-wagmi-connector";
 import { METADATA } from "../../lib/utils";
 
+
 export const config = createConfig({
   chains: [base, optimism],
   transports: {

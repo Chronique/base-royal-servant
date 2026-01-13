@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import { sdk } from "@farcaster/miniapp-sdk";
-import { useAccount, usePublicClient, useConnect, useDisconnect } from "wagmi"; // Tambahkan usePublicClient & useConnect
+import { useAccount, usePublicClient, useConnect } from "wagmi"; // Tambahkan usePublicClient & useConnect
 import { useSendCalls } from 'wagmi/experimental';
 import { AllowanceCard, type AllowanceItem } from "./AllowanceCard"; 
 import { encodeFunctionData, type Address } from 'viem';
