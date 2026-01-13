@@ -44,8 +44,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "fc:frame:image": METADATA.bannerImageUrl,
       "fc:frame:cast_action:canonical_domain": CANONICAL_DOMAIN,
       
-      // MASUKKAN DI SINI:
-      "base:app_id": "6966c5b3cf19b2d92b9f7348",
+     
     },
   };
 }
