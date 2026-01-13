@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { AlertTriangle, ShieldCheck, FileText, Coins } from "lucide-react";
+import { AlertTriangle, FileText, Coins } from "lucide-react";
 
-interface AllowanceItem {
+export interface AllowanceItem {
   id: string;
   tokenAddress: string;
   tokenSymbol: string;
@@ -15,7 +15,13 @@ interface AllowanceItem {
   type: 'CONTENT' | 'TOKEN' | 'SCAM';
 }
 
-export const AllowanceCard = ({ item, selected, onToggle }: { item: AllowanceItem, selected: boolean, onToggle: (id: string) => void }) => {
+interface AllowanceCardProps {
+  item: AllowanceItem;
+  selected: boolean;
+  onToggle: (id: string) => void;
+}
+
+export const AllowanceCard = ({ item, selected, onToggle }: AllowanceCardProps) => {
   const isDanger = item.isHoneypot || item.isScam;
 
   return (
@@ -26,7 +32,6 @@ export const AllowanceCard = ({ item, selected, onToggle }: { item: AllowanceIte
       } ${isDanger ? 'border-red-100 bg-red-50/30' : ''}`}
     >
       <div className="flex items-center gap-4">
-        {/* Visual Identity */}
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
           isDanger ? 'bg-red-100 text-red-600' : item.type === 'CONTENT' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
         }`}>
