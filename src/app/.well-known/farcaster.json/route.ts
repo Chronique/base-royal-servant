@@ -21,6 +21,7 @@ export async function GET() {
         "ogTitle": METADATA.name,
         "ogDescription": METADATA.description,
         "ogImageUrl": METADATA.bannerImageUrl,
+        "primaryCategory": "developer-tools",
         "requiredCapabilities": [
           "actions.ready",
           "actions.signIn", 
@@ -40,12 +41,12 @@ export async function GET() {
           "eip155:8453",
           "eip155:10"
         ],
-        "canonicalDomain": "https://fulldemo-minikit.vercel.app",
+        "canonicalDomain": "https://base-royal-servant.vercel.app",
         "noindex": false,
-        "tags": ["base", "baseapp", "miniapp", "demo", "basepay"]
+        "tags": ["base", "baseapp", "miniapp", "tools"]
       },
       "baseBuilder": {
-        "allowedAddresses": ["0x8342A48694A74044116F330db5050a267b28dD85"],
+        "allowedAddresses": ["0x4fba95e4772be6d37a0c931D00570Fe2c9675524"],
       }
   };
 

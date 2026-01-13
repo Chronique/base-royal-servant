@@ -2,11 +2,12 @@ import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export const METADATA = {
-  name: "Base Revoke",
+  name: "Royal Servant",
   description: "Cleaning up your Base wallet by revoking unnecessary token allowances.",
+  
   bannerImageUrl: 'https://i.imgur.com/2bsV8mV.png',
   iconImageUrl: 'https://i.imgur.com/brcnijg.png',
-  homeUrl: process.env.NEXT_PUBLIC_URL ?? "https://fulldemo-minikit.vercel.app",
+  homeUrl: process.env.NEXT_PUBLIC_URL ?? "https://base-royal-servant.vercel.app",
   splashBackgroundColor: "#FFFFFF"
 }
 
