@@ -2,11 +2,10 @@ import { Metadata } from "next";
 import App from "./app";
 import { METADATA } from "~/lib/utils";
 
-// 1. Atur agar halaman selalu dynamic (Solusi Build Error MiniKit)
+// 1. Pastikan halaman bersifat dynamic untuk OnchainKit/MiniKit
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-// 2. Konfigurasi Frame V2 (Ganti domain dengan domain Vercel kamu)
 const CANONICAL_DOMAIN = "base-royal-servant.vercel.app"; 
 
 const frame = {
@@ -37,12 +36,15 @@ export async function generateMetadata(): Promise<Metadata> {
       description: METADATA.description,
       images: [METADATA.bannerImageUrl],
       url: METADATA.homeUrl,
-      siteName: METADATA.name,
     },
     other: {
+      // Metadata untuk Farcaster Frame
       "fc:frame": JSON.stringify(frame),
       "fc:frame:image": METADATA.bannerImageUrl,
       "fc:frame:cast_action:canonical_domain": CANONICAL_DOMAIN,
+      
+      // --- TAMBAHKAN BASE APP ID DI SINI ---
+      "base:app_id": "6966c5b3cf19b2d92b9f7348", 
     },
   };
 }
