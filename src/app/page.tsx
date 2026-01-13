@@ -40,13 +40,12 @@ export async function generateMetadata(): Promise<Metadata> {
       url: METADATA.homeUrl,
     },
     other: {
-      // Metadata untuk Farcaster Frame v2
       "fc:frame": JSON.stringify(frame),
       "fc:frame:image": METADATA.bannerImageUrl,
       "fc:frame:cast_action:canonical_domain": CANONICAL_DOMAIN,
       
-      // --- INTEGRASI BASE APP ID ---
-      "base:app_id": "6966c5b3cf19b2d92b9f7348", 
+      // MASUKKAN DI SINI:
+      "base:app_id": "6966c5b3cf19b2d92b9f7348",
     },
   };
 }
