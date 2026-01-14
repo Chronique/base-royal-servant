@@ -10,6 +10,8 @@ export async function GET() {
     frame: {
       version: "1",
       name: METADATA.name,
+      // Menambahkan App ID di level frame untuk tracking Farcaster/Base
+      appId: "6966c5b3cf19b2d92b9f7348", 
       iconUrl: METADATA.iconImageUrl,
       homeUrl: METADATA.homeUrl,
       imageUrl: METADATA.bannerImageUrl,
@@ -23,7 +25,6 @@ export async function GET() {
       requiredCapabilities: [
         "actions.ready",
         "actions.signIn", 
-        // "actions.openMiniApp" <-- DIHAPUS karena tidak valid
         "actions.openUrl",
         "actions.sendToken",
         "actions.viewToken", 
@@ -36,15 +37,15 @@ export async function GET() {
         "wallet.getEthereumProvider"
       ],
       requiredChains: [
-        "eip155:8453", // Base
-        "eip155:10"   // Optimism
+        "eip155:8453", 
+        "eip155:10"
       ],
-      // Pastikan domain ini sama persis dengan yang ada di payload accountAssociation
       "canonicalDomain": "base-royal-servant.vercel.app",
       "noindex": false,
       "tags": ["base", "baseapp", "miniapp", "tools"]
     },
     baseBuilder: {
+      "builder": "bc_wqi7gszy", // Menambahkan ID di sini untuk integrasi Base Builder
       "allowedAddresses": ["0x4fba95e4772be6d37a0c931D00570Fe2c9675524"],
     }
   };
