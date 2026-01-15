@@ -22,7 +22,7 @@ import {
 const erc20Abi = [{ name: 'approve', type: 'function', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] }] as const;
 
 // Alamat SpendPermissionManager di Base
-const SPEND_PERMISSION_MANAGER = "0xf251cc660a92e1069796e959ec347e86e58908f9" as Address;
+const SPEND_PERMISSION_MANAGER = "0xf85210B21cC50302F477BA56686d2019dC9b67Ad" as Address;
 
 export const Demo = ({ userFid }: { userFid?: number }) => {
   const { address, isConnected } = useAccount();
