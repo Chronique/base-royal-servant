@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { sdk } from "@farcaster/miniapp-sdk";
-import { useAccount, useConnect, usePublicClient } from "wagmi";
+import { useAccount, useConnect } from "wagmi";
 import { useSendCalls } from 'wagmi/experimental';
 import { AllowanceCard, type AllowanceItem } from "./AllowanceCard"; 
 import { encodeFunctionData, type Address } from 'viem';
@@ -31,7 +31,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const { sendCalls } = useSendCalls();
-  const publicClient = usePublicClient();
 
   // State Management
   const [activeTab, setActiveTab] = useState("scanning");
@@ -65,8 +64,10 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       const rawList = json.result || [];
 
       const enriched: ExtendedAllowanceItem[] = rawList.map((item: any, idx: number) => {
-        // Deteksi tipe secara internal
-        const isERC20 = item.token.contract_type?.toUpperCase() === "ERC20";
+        // PERBAIKAN: Deteksi NFT yang lebih ketat agar USDC tidak salah deteksi
+        const contractType = item.token.contract_type?.toUpperCase();
+        const isNFT = contractType === "ERC721" || contractType === "ERC1155";
+        
         return {
           id: `mol-${idx}`,
           tokenAddress: item.token.address,
@@ -75,7 +76,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           spenderLabel: item.spender.address_label || "Contract",
           amount: item.value_formatted === "Unlimited" ? "Unlimited" : item.value_formatted,
           risk: (item.spender.address_label === null || item.value === "unlimited") ? 'high' : 'low',
-          type: isERC20 ? "TOKEN" : "NFT"
+          type: isNFT ? "NFT" : "TOKEN"
         };
       });
 
@@ -102,17 +103,17 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         const item = allowances.find(a => a.id === id);
         if (!item) return null;
 
+        // Memastikan tipe data transaksi sesuai dengan kontrak asli
         return {
           to: item.tokenAddress as Address,
-          value: 0n, // Wajib ada agar Smart Wallet tidak error
+          value: 0n,
           data: item.type === "TOKEN" 
             ? encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [item.spender as Address, 0n] })
             : encodeFunctionData({ abi: nftAbi, functionName: 'setApprovalForAll', args: [item.spender as Address, false] }),
         };
       }).filter((c): c is any => c !== null);
 
-      // Gunakan sendCalls tanpa paymasterService manual
-      // Transaksi diarahkan ke dompet aktif (Warpcast/Coinbase)
+      // Gunakan sendCalls murni. Base App akan mensubsidi gas secara otomatis jika tersedia
       await sendCalls({ calls });
       
       setSelectedIds([]);
@@ -154,7 +155,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         {isSuccess && activeTab === "revoke" && (
            <div className="mb-6 p-6 bg-green-50 border-2 border-green-200 rounded-[2rem] text-center animate-in zoom-in-95">
               <CheckCircle2 size={40} className="text-green-500 mx-auto mb-2" />
-              <p className="font-black text-green-700">PURGE INITIATED!</p>
+              <p className="font-black text-green-700 uppercase">Success! Wallet Secured.</p>
               <button onClick={shareToFarcaster} className="mt-3 px-6 py-2 bg-green-500 text-white rounded-full text-[10px] font-black uppercase">Share to Feed</button>
            </div>
         )}
@@ -203,7 +204,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
              <div className="p-10 bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-200">
                 <Trophy size={64} className="mx-auto text-yellow-500 mb-4" />
                 <p className="font-black text-xl mb-4 italic tracking-tighter">FID: {userFid || 'GUEST'}</p>
-                <button onClick={shareToFarcaster} className="bg-blue-600 text-white px-8 py-3 rounded-full font-black text-xs flex items-center gap-2 mx-auto hover:scale-105 transition-all">
+                <button onClick={shareToFarcaster} className="bg-blue-600 text-white px-8 py-3 rounded-full font-black text-xs flex items-center gap-2 mx-auto">
                   <Share2 size={14} /> SHARE PERFORMANCE
                 </button>
              </div>
@@ -237,7 +238,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
             disabled={isLoading}
             className="w-full bg-black text-white py-6 rounded-[2.5rem] font-black text-xl shadow-2xl flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
           >
-            {isLoading ? "PREPARING..." : `PURGE ${selectedIds.length} RISKS`}
+            {isLoading ? "ESTIMATING..." : `PURGE ${selectedIds.length} RISKS`}
           </button>
         </div>
       )}
