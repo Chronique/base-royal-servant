@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback } from "react"; // useMemo dihapus karena tidak dipakai
 import {
   useAccount,
   useSendTransaction,
@@ -23,7 +23,6 @@ import { createBaseAccountSDK } from "@base-org/account";
 import { METADATA } from "~/lib/utils";
 import { SiweMessage } from "siwe";
 
-// dylsteck.base.eth
 const RECIPIENT_ADDRESS = "0x8342A48694A74044116F330db5050a267b28dD85";
 
 const baseAccountSDK = createBaseAccountSDK({
@@ -77,7 +76,6 @@ export function WalletConnect() {
         </Button>
       </div>
 
-      {/* Base Account Sign In Button */}
       <div className="mb-4">
         <SignInWithBaseButton 
           align="center"
@@ -129,7 +127,7 @@ export function SignMessage() {
       });
     }
 
-    signMessage({ message: "Hello from Frames v2!" });
+    signMessage({ message: "Hello from Royal Servant!" });
   }, [connectAsync, isConnected, signMessage]);
 
   return (
@@ -176,7 +174,7 @@ export function SignSiweMessage() {
     const siweMessage = new SiweMessage({
       domain: window.location.host,
       address,
-      statement: "Sign in with Ethereum to the app.",
+      statement: "Sign in with Ethereum to Royal Servant.",
       uri: window.location.origin,
       version: "1",
       chainId: chainId || base.id,
@@ -206,56 +204,6 @@ export function SignSiweMessage() {
   );
 }
 
-export function SendEth() {
-  const { isConnected, chainId } = useAccount();
-  const {
-    sendTransaction,
-    data,
-    error: sendTxError,
-    isError: isSendTxError,
-    isPending: isSendTxPending,
-  } = useSendTransaction();
-
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useWaitForTransactionReceipt({
-      hash: data,
-    });
-
-  const handleSend = useCallback((): void => {
-    sendTransaction({
-      to: RECIPIENT_ADDRESS,
-      value: 1n,
-    });
-  }, [sendTransaction]);
-
-  return (
-    <>
-      <Button
-        onClick={handleSend}
-        disabled={!isConnected || isSendTxPending}
-        isLoading={isSendTxPending}
-      >
-        Send Transaction (ETH)
-      </Button>
-      {isSendTxError && renderError(sendTxError)}
-      {data && (
-        <div className="mt-2 p-2 bg-gray-100 rounded text-xs">
-          <div className="text-gray-600 mb-1">Response</div>
-          <div className="text-green-600 font-mono break-all">Hash: {truncateAddress(data)}</div>
-          <div className="text-green-600 font-mono">
-            Status:{" "}
-            {isConfirming
-              ? "Confirming..."
-              : isConfirmed
-              ? "Confirmed!"
-              : "Pending"}
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
 export function SignTypedData() {
   const chainId = useChainId();
   const { isConnected } = useAccount();
@@ -269,7 +217,7 @@ export function SignTypedData() {
   const signTyped = useCallback((): void => {
     signTypedData({
       domain: {
-        name: "Frames v2 Demo",
+        name: "Royal Servant",
         version: "1",
         chainId,
       },
@@ -277,7 +225,7 @@ export function SignTypedData() {
         Message: [{ name: "content", type: "string" }],
       },
       message: {
-        content: "Hello from Frames v2!",
+        content: "Greetings from Royal Servant!",
       },
       primaryType: "Message",
     });
@@ -380,5 +328,3 @@ export function SendTransaction() {
     </>
   );
 }
-
- 
