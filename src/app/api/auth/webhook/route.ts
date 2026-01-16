@@ -2,6 +2,10 @@ import { Errors, createClient as createFarcasterClient } from "@farcaster/quick-
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
+
+export const dynamic = "force-dynamic";
+import { supabaseAdmin } from "~/lib/supabase";
+
 // 1. Inisialisasi Supabase dengan alias
 const supabase = createSupabaseClient(
   process.env.SUPABASE_URL!, 
