@@ -33,7 +33,7 @@ export const AllowanceCard = memo(({ item, selected, onToggle, theme }: {
       onClick={() => onToggle(item.id)}
       className={`p-4 border rounded-[1.5rem] flex justify-between items-center cursor-pointer transition-all active:scale-[0.98] ${
         selected 
-          ? 'border-[#D4AF37] bg-[#D4AF37]/10' 
+          ? 'border-[#D4AF37] bg-[#D4AF37]/10 shadow-lg' 
           : theme === 'dark' 
             ? 'border-white/5 bg-[#151515] hover:bg-[#1A1A1A]' 
             : 'border-gray-100 bg-white hover:border-gray-200 shadow-sm'
@@ -55,17 +55,17 @@ export const AllowanceCard = memo(({ item, selected, onToggle, theme }: {
         </div>
 
         <div className="overflow-hidden">
-          <h4 className={`font-black text-sm truncate max-w-[120px] ${isHighRisk ? 'text-red-600' : theme === 'dark' ? 'text-white' : 'text-[#3E2723]'}`}>
+          <h4 className={`font-black text-sm truncate max-w-[120px] ${isHighRisk ? 'text-red-500' : theme === 'dark' ? 'text-white' : 'text-[#3E2723]'}`}>
             {item.tokenSymbol}
           </h4>
-          <p className="text-[8px] opacity-40 uppercase truncate max-w-[130px]">Via: {item.spenderLabel}</p>
+          <p className="text-[8px] opacity-40 uppercase truncate max-w-[130px] italic tracking-tighter">Via: {item.spenderLabel}</p>
         </div>
       </div>
 
       <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
-        selected ? "bg-[#D4AF37] border-[#D4AF37]" : theme === 'dark' ? 'border-white/20' : 'border-gray-300'
+        selected ? "bg-[#D4AF37] border-[#D4AF37]" : theme === 'dark' ? 'border-white/10' : 'border-gray-300'
       }`}>
-        {selected && <CheckCircledIcon width={14} height={14} className={theme === 'dark' ? 'text-white' : 'text-black'} />}
+        {selected && <CheckCircledIcon width={14} height={14} className={theme === 'dark' ? 'text-[#D4AF37]' : 'text-black'} />}
       </div>
     </div>
   );

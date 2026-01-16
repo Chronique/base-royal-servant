@@ -5,29 +5,28 @@ import React, { Suspense, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 
-// Import Demo secara dynamic (hanya jalan di sisi client)
-const Demo = dynamic(() => import("~/components/Demo").then((mod) => mod.Demo), {
-  ssr: false,
-});
+// Fix Type Error: Definisikan tipe props untuk dynamic import
+const Demo = dynamic<{ userFid?: number }>(
+  () => import("~/components/Demo").then((mod) => mod.Demo), 
+  { ssr: false }
+);
 
 export default function App() {
   const { isFrameReady, setFrameReady, context } = useMiniKit();
 
-  // Beritahu Farcaster/Coinbase bahwa app siap tampil
   useEffect(() => {
     if (!isFrameReady) {
       setFrameReady();
     }
   }, [setFrameReady, isFrameReady]);
 
-  // Ambil FID dari context Farcaster (jika ada)
   const userFid = context?.user?.fid;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-black">
+    <div className="min-h-screen bg-[#0A0A0A] text-white">
       <Suspense fallback={
-        <div className="flex items-center justify-center min-h-screen">
-          <p className="font-bold animate-pulse text-blue-600">Initializing Base Revoke...</p>
+        <div className="flex items-center justify-center min-h-screen bg-[#0A0A0A]">
+          <p className="font-black animate-pulse text-[#D4AF37] italic uppercase tracking-widest">SOWAN...</p>
         </div>
       }>
         <Demo userFid={userFid} />
