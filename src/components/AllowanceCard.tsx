@@ -33,14 +33,13 @@ export const AllowanceCard = memo(({ item, selected, onToggle, theme }: {
       onClick={() => onToggle(item.id)}
       className={`p-4 border rounded-[1.5rem] flex justify-between items-center cursor-pointer transition-all active:scale-[0.98] ${
         selected 
-          ? 'border-[#D4AF37] bg-[#D4AF37]/10' 
+          ? 'border-[#D4AF37] bg-[#D4AF37]/10 shadow-lg' 
           : theme === 'dark' 
             ? 'border-white/5 bg-[#151515] hover:bg-[#1A1A1A]' 
             : 'border-gray-100 bg-white hover:border-gray-200 shadow-sm'
       }`}
     >
       <div className="flex items-center gap-3">
-        {/* Logo Koin Asli */}
         <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${
           !item.tokenLogo && (isHighRisk ? 'bg-red-500/20 text-red-500' : 'bg-[#D4AF37]/20 text-[#D4AF37]')
         }`}>
@@ -59,7 +58,7 @@ export const AllowanceCard = memo(({ item, selected, onToggle, theme }: {
           <h4 className={`font-black text-sm truncate max-w-[120px] ${isHighRisk ? 'text-red-600' : theme === 'dark' ? 'text-white' : 'text-[#3E2723]'}`}>
             {item.tokenSymbol}
           </h4>
-          <p className="text-[8px] opacity-40 uppercase truncate max-w-[130px] italic">Via: {item.spenderLabel}</p>
+          <p className="text-[8px] opacity-40 uppercase truncate max-w-[130px] italic tracking-tighter">Via: {item.spenderLabel}</p>
         </div>
       </div>
 

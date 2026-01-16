@@ -22,7 +22,7 @@ import {
   EnterIcon
 } from "@radix-ui/react-icons";
 
-export const Demo = () => {
+export const Demo = ({ userFid }: { userFid?: number }) => {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const { sendCalls } = useSendCalls();
@@ -38,11 +38,11 @@ export const Demo = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // INITIALIZATION: Ambil Profil & Konek Otomatis
+  // INITIALIZATION: Deteksi Profil & Koneksi Otomatis
   useEffect(() => {
     const init = async () => {
       const context = await sdk.context;
-      if (context?.user) setUserProfile(context.user);
+      if (context?.user) setUserProfile(context.user); // Ambil Nama & Foto asli
       
       if (!isConnected) {
         const farcaster = connectors.find((c) => c.id === "farcaster");
@@ -55,8 +55,10 @@ export const Demo = () => {
     init();
   }, [connectors, isConnected, connect]);
 
+  // FIX: Koneksi Manual Browser Biasa (Bukan Farcaster)
   const handleManualConnect = () => {
-    if (connectors.length > 0) connect({ connector: connectors[0] });
+    const browserConnector = connectors.find(c => c.id !== 'farcaster') || connectors[0];
+    if (browserConnector) connect({ connector: browserConnector });
   };
 
   const loadSecurityData = useCallback(async () => {
@@ -98,9 +100,9 @@ export const Demo = () => {
 
   const totalPages = Math.ceil(allowances.length / itemsPerPage);
 
+  // FIX: Pop-up Pin App (Add to Farcaster)
   const handlePinApp = async () => {
     try {
-      // Memicu pop-up "Add Mini App" di Farcaster/Base App
       await sdk.actions.addFrame(); 
     } catch (err) { console.error("Pin failed", err); }
   };
@@ -133,7 +135,7 @@ export const Demo = () => {
     } catch (e) { console.error(e); } finally { setIsLoading(false); }
   };
 
-  // LANDING PAGE (Mencegah "Bengong" di browser biasa)
+  // LANDING PAGE (Mencegah "Bengong")
   if (!isConnected) {
     return (
       <div className={`max-w-xl mx-auto min-h-screen flex flex-col items-center justify-center p-8 transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
@@ -161,10 +163,10 @@ export const Demo = () => {
         <div className="flex justify-between items-center mb-1">
           <p className="text-[8px] font-black text-[#D4AF37] tracking-[0.3em] uppercase italic">Royal Servant</p>
           <div className="flex gap-2">
-            <button onClick={handlePinApp} className={`p-1.5 rounded-full ${theme === 'dark' ? 'bg-white/5 text-[#D4AF37]' : 'bg-black/5 text-gray-600'}`}>
+            <button onClick={handlePinApp} className={`p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] hover:scale-110 transition-transform`}>
               <BookmarkFilledIcon width={14} height={14} />
             </button>
-            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className={`p-1.5 rounded-full ${theme === 'dark' ? 'bg-white/5 text-[#D4AF37]' : 'bg-black/5 text-gray-600'}`}>
+            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]">
               {theme === 'dark' ? <SunIcon width={14} height={14} /> : <MoonIcon width={14} height={14} />}
             </button>
           </div>
@@ -175,7 +177,7 @@ export const Demo = () => {
       </div>
 
       <div className="px-4 mt-6">
-        {/* LIST VIEW (SCAN & PURIFY) */}
+        {/* VIEW: SCAN & PURIFY */}
         {(activeTab === "scanning" || activeTab === "revoke") && (
           <>
             <div className="space-y-2">
@@ -207,7 +209,7 @@ export const Demo = () => {
                ))}
             </div>
 
-            {/* Paginasi hanya di tab Scan & Purify */}
+            {/* Paginasi hanya muncul di tab Guards/Purify */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-3 mt-8">
                 <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-1.5 rounded-full bg-[#D4AF37]/10 disabled:opacity-10 text-[#D4AF37]">
@@ -222,22 +224,22 @@ export const Demo = () => {
           </>
         )}
 
-        {/* RANK TAB */}
+        {/* TAB RANK (USER PROFILE) */}
         {activeTab === "score" && (
-           <div className={`p-8 rounded-[2.5rem] border-2 border-dashed border-[#D4AF37]/20 text-center ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
+           <div className={`p-8 rounded-[2rem] border-2 border-dashed border-[#D4AF37]/20 text-center ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
               <div className="relative w-16 h-16 mx-auto mb-4">
                  {userProfile?.pfpUrl ? (
-                   <img src={userProfile.pfpUrl} alt="profile" className="w-full h-full rounded-full border-2 border-[#D4AF37] object-cover shadow-lg" />
+                   <img src={userProfile.pfpUrl} alt="profile" className="w-full h-full rounded-full border-2 border-[#D4AF37] object-cover" />
                  ) : (
-                   <div className="w-full h-full rounded-full bg-gray-500/10 flex items-center justify-center text-[#D4AF37] border-2 border-[#D4AF37]"><StarIcon width={24} height={24} /></div>
+                   <div className="w-full h-full rounded-full bg-gray-500/10 flex items-center justify-center text-[#D4AF37] border-2 border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20"><StarIcon width={24} height={24} /></div>
                  )}
               </div>
-              <h2 className="text-xl font-black italic uppercase mb-1">{userProfile?.displayName || 'Abdi Dalem'}</h2>
-              <p className="text-[9px] opacity-40 uppercase mb-6 tracking-widest italic">FID: {userProfile?.fid || 'Guest'}</p>
+              <h2 className="text-xl font-black italic uppercase mb-1">{userProfile?.displayName || 'ABDI DALEM'}</h2>
+              <p className="text-[9px] opacity-40 uppercase mb-6 italic">FID: {userProfile?.fid || userFid || 'GUEST'}</p>
               
               <div className="flex flex-col gap-2 max-w-[150px] mx-auto">
                 <div className="flex justify-between text-[10px] font-black">
-                  <span className="opacity-40 italic">WALLET HEALTH</span>
+                  <span className="opacity-40 italic tracking-tighter">WALLET HEALTH</span>
                   <span className="text-[#D4AF37]">{walletScore}%</span>
                 </div>
                 <div className="w-full bg-gray-500/20 h-1.5 rounded-full overflow-hidden">
@@ -245,14 +247,14 @@ export const Demo = () => {
                 </div>
               </div>
 
-              <button onClick={handleShare} className="mt-8 px-6 py-2 bg-[#D4AF37] text-black rounded-full font-black text-[9px] uppercase flex items-center gap-2 mx-auto active:scale-95 transition-all shadow-lg">
+              <button onClick={handleShare} className="mt-8 px-6 py-2 bg-[#D4AF37] text-black rounded-full font-black text-[9px] uppercase flex items-center gap-2 mx-auto active:scale-95 transition-all">
                 <Share1Icon width={12} height={12} /> Share Score
               </button>
            </div>
         )}
       </div>
 
-      {/* FOOTER NAV */}
+      {/* COMPACT NAV */}
       <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[80%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-50 ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
         {[
           { id: 'scanning', icon: <MagnifyingGlassIcon width={18} height={18} />, label: 'Guards' },
@@ -268,7 +270,7 @@ export const Demo = () => {
 
       {/* PURIFY BUTTON */}
       {selectedIds.size > 0 && activeTab === "revoke" && (
-        <div className="fixed bottom-24 left-0 right-0 px-10 max-w-[180px] mx-auto z-50 animate-in slide-in-from-bottom-5">
+        <div className="fixed bottom-22 left-0 right-0 px-10 max-w-[180px] mx-auto z-50 animate-in slide-in-from-bottom-5">
           <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-3.5 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 transition-all uppercase italic">
             {isLoading ? <UpdateIcon className="animate-spin" /> : `Purify ${selectedIds.size}`}
           </button>

@@ -16,6 +16,7 @@ export async function GET() {
       homeUrl: METADATA.homeUrl,
       imageUrl: METADATA.bannerImageUrl,
       splashImageUrl: METADATA.iconImageUrl,
+      webhookUrl: "https://base-royal-servant.vercel.app/api/webhook"
       splashBackgroundColor: METADATA.splashBackgroundColor,
       description: METADATA.description,
       ogTitle: METADATA.name,
