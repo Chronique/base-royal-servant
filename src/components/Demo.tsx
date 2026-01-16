@@ -18,13 +18,11 @@ import {
   ChevronLeftIcon, 
   ChevronRightIcon,
   CircleIcon,
-  BookmarkFilledIcon 
+  BookmarkFilledIcon,
+  EnterIcon
 } from "@radix-ui/react-icons";
 
-const erc20Abi = [{ name: 'approve', type: 'function', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] }] as const;
-const nftAbi = [{ name: 'setApprovalForAll', type: 'function', inputs: [{ name: 'operator', type: 'address' }, { name: 'approved', type: 'bool' }], outputs: [] }] as const;
-
-export const Demo = ({ userFid }: { userFid?: number }) => {
+export const Demo = () => {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const { sendCalls } = useSendCalls();
@@ -40,19 +38,26 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // INITIALIZATION: Ambil Profil & Konek Otomatis
   useEffect(() => {
     const init = async () => {
       const context = await sdk.context;
-      if (context?.user) setUserProfile(context.user); // Ambil profil user asli
+      if (context?.user) setUserProfile(context.user);
       
       if (!isConnected) {
         const farcaster = connectors.find((c) => c.id === "farcaster");
+        const cbWallet = connectors.find((c) => c.id === "coinbaseWalletSDK");
         if (farcaster) connect({ connector: farcaster });
+        else if (cbWallet) connect({ connector: cbWallet });
       }
       sdk.actions.ready();
     };
     init();
   }, [connectors, isConnected, connect]);
+
+  const handleManualConnect = () => {
+    if (connectors.length > 0) connect({ connector: connectors[0] });
+  };
 
   const loadSecurityData = useCallback(async () => {
     if (!address) return;
@@ -95,7 +100,8 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
 
   const handlePinApp = async () => {
     try {
-      await sdk.actions.addFrame(); // Memanggil pop-up add app
+      // Memicu pop-up "Add Mini App" di Farcaster/Base App
+      await sdk.actions.addFrame(); 
     } catch (err) { console.error("Pin failed", err); }
   };
 
@@ -117,8 +123,8 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           to: item.tokenAddress as Address,
           value: 0n,
           data: item.type === "TOKEN" 
-            ? encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [item.spender as Address, 0n] })
-            : encodeFunctionData({ abi: nftAbi, functionName: 'setApprovalForAll', args: [item.spender as Address, false] }),
+            ? encodeFunctionData({ abi: [{ name: 'approve', type: 'function', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] }], functionName: 'approve', args: [item.spender as Address, 0n] })
+            : encodeFunctionData({ abi: [{ name: 'setApprovalForAll', type: 'function', inputs: [{ name: 'operator', type: 'address' }, { name: 'approved', type: 'bool' }], outputs: [] }], functionName: 'setApprovalForAll', args: [item.spender as Address, false] }),
         };
       }).filter(Boolean);
 
@@ -127,7 +133,25 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
     } catch (e) { console.error(e); } finally { setIsLoading(false); }
   };
 
-  if (!isConnected) return <div className="p-20 text-center font-black animate-pulse text-[#D4AF37]">SOWAN...</div>;
+  // LANDING PAGE (Mencegah "Bengong" di browser biasa)
+  if (!isConnected) {
+    return (
+      <div className={`max-w-xl mx-auto min-h-screen flex flex-col items-center justify-center p-8 transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
+        <div className="text-center space-y-6">
+          <div className="relative w-20 h-20 mx-auto mb-8 bg-[#1A1A1A] border-2 border-[#D4AF37] p-5 rounded-full flex items-center justify-center">
+            <StarIcon width={32} height={32} className="text-[#D4AF37]" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.4em] uppercase italic">Abdi Dalem Security</p>
+            <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-tight">Protect Your<br/>Base Wallet</h2>
+          </div>
+          <button onClick={handleManualConnect} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase flex items-center gap-3 mx-auto shadow-xl active:scale-95 transition-all">
+            <EnterIcon width={16} height={16} /> Masuk Keraton
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`max-w-xl mx-auto pb-44 min-h-screen font-sans transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
@@ -137,10 +161,10 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         <div className="flex justify-between items-center mb-1">
           <p className="text-[8px] font-black text-[#D4AF37] tracking-[0.3em] uppercase italic">Royal Servant</p>
           <div className="flex gap-2">
-            <button onClick={handlePinApp} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] hover:scale-110 transition-transform">
+            <button onClick={handlePinApp} className={`p-1.5 rounded-full ${theme === 'dark' ? 'bg-white/5 text-[#D4AF37]' : 'bg-black/5 text-gray-600'}`}>
               <BookmarkFilledIcon width={14} height={14} />
             </button>
-            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]">
+            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className={`p-1.5 rounded-full ${theme === 'dark' ? 'bg-white/5 text-[#D4AF37]' : 'bg-black/5 text-gray-600'}`}>
               {theme === 'dark' ? <SunIcon width={14} height={14} /> : <MoonIcon width={14} height={14} />}
             </button>
           </div>
@@ -151,45 +175,39 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       </div>
 
       <div className="px-4 mt-6">
+        {/* LIST VIEW (SCAN & PURIFY) */}
         {(activeTab === "scanning" || activeTab === "revoke") && (
           <>
             <div className="space-y-2">
-              {activeTab === "scanning" ? (
-                paginatedItems.map((item) => (
-                  <div key={item.id} className={`p-3 border rounded-[1.2rem] flex justify-between items-center ${theme === 'dark' ? 'bg-[#151515] border-white/5' : 'bg-white border-gray-100 shadow-sm'}`}>
+               {activeTab === "revoke" && allowances.length > 0 && (
+                 <div className="flex justify-between items-center px-2 mb-2">
+                    <button onClick={() => setSelectedIds(selectedIds.size === allowances.length ? new Set() : new Set(allowances.map(a => a.id)))} className="text-[9px] font-black text-[#D4AF37] uppercase underline decoration-2">
+                       {selectedIds.size === allowances.length ? "Deselect All" : "Select All"}
+                    </button>
+                 </div>
+               )}
+               {paginatedItems.map((item) => (
+                 activeTab === "scanning" ? (
+                  <div key={item.id} className={`p-3 border rounded-[1.2rem] flex justify-between items-center ${theme === 'dark' ? 'bg-[#151515] border-white/5' : 'bg-white border-gray-100'}`}>
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-gray-500/10 flex items-center justify-center">
                         {item.tokenLogo ? <img src={item.tokenLogo} alt={item.tokenSymbol} className="w-full h-full object-cover" /> : <CircleIcon className="text-[#D4AF37]" />}
                       </div>
-                      <div>
-                        <p className="font-black text-xs leading-none mb-1">{item.tokenSymbol}</p>
-                        <p className="text-[8px] opacity-30 truncate max-w-[130px]">VIA: {item.spenderLabel}</p>
-                      </div>
+                      <div className="flex flex-col"><p className="font-black text-xs leading-none mb-1">{item.tokenSymbol}</p><p className="text-[8px] opacity-30 truncate max-w-[130px]">VIA: {item.spenderLabel}</p></div>
                     </div>
                     <p className="text-[9px] font-black">{item.amount}</p>
                   </div>
-                ))
-              ) : (
-                <>
-                   {allowances.length > 0 && (
-                     <div className="flex justify-between items-center px-2 mb-2">
-                        <button onClick={() => setSelectedIds(selectedIds.size === allowances.length ? new Set() : new Set(allowances.map(a => a.id)))} className="text-[9px] font-black text-[#D4AF37] uppercase underline decoration-2">
-                           {selectedIds.size === allowances.length ? "Deselect All" : "Select All"}
-                        </button>
-                     </div>
-                   )}
-                   {paginatedItems.map((item) => (
-                     <AllowanceCard key={item.id} item={item} selected={selectedIds.has(item.id)} theme={theme} onToggle={(id) => {
-                        const next = new Set(selectedIds);
-                        if (next.has(id)) next.delete(id); else next.add(id);
-                        setSelectedIds(next);
-                     }} />
-                   ))}
-                </>
-              )}
+                 ) : (
+                  <AllowanceCard key={item.id} item={item} selected={selectedIds.has(item.id)} theme={theme} onToggle={(id) => {
+                      const next = new Set(selectedIds);
+                      if (next.has(id)) next.delete(id); else next.add(id);
+                      setSelectedIds(next);
+                  }} />
+                 )
+               ))}
             </div>
 
-            {/* Paginasi hanya di tab Scan/Purify */}
+            {/* Paginasi hanya di tab Scan & Purify */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-3 mt-8">
                 <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-1.5 rounded-full bg-[#D4AF37]/10 disabled:opacity-10 text-[#D4AF37]">
@@ -204,36 +222,37 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </>
         )}
 
+        {/* RANK TAB */}
         {activeTab === "score" && (
-           <div className={`p-8 rounded-[2rem] border-2 border-dashed border-[#D4AF37]/20 text-center ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
+           <div className={`p-8 rounded-[2.5rem] border-2 border-dashed border-[#D4AF37]/20 text-center ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
               <div className="relative w-16 h-16 mx-auto mb-4">
                  {userProfile?.pfpUrl ? (
-                   <img src={userProfile.pfpUrl} alt="profile" className="w-full h-full rounded-full border-2 border-[#D4AF37] object-cover" />
+                   <img src={userProfile.pfpUrl} alt="profile" className="w-full h-full rounded-full border-2 border-[#D4AF37] object-cover shadow-lg" />
                  ) : (
                    <div className="w-full h-full rounded-full bg-gray-500/10 flex items-center justify-center text-[#D4AF37] border-2 border-[#D4AF37]"><StarIcon width={24} height={24} /></div>
                  )}
               </div>
-              <h2 className="text-xl font-black italic uppercase mb-1">{userProfile?.displayName || 'ABDI DALEM'}</h2>
-              <p className="text-[9px] opacity-40 uppercase mb-6 tracking-widest italic">FID: {userProfile?.fid || userFid || 'GUEST'}</p>
+              <h2 className="text-xl font-black italic uppercase mb-1">{userProfile?.displayName || 'Abdi Dalem'}</h2>
+              <p className="text-[9px] opacity-40 uppercase mb-6 tracking-widest italic">FID: {userProfile?.fid || 'Guest'}</p>
               
               <div className="flex flex-col gap-2 max-w-[150px] mx-auto">
                 <div className="flex justify-between text-[10px] font-black">
-                  <span className="opacity-40 tracking-tighter italic">WALLET HEALTH</span>
+                  <span className="opacity-40 italic">WALLET HEALTH</span>
                   <span className="text-[#D4AF37]">{walletScore}%</span>
                 </div>
                 <div className="w-full bg-gray-500/20 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-[#D4AF37] h-full transition-all" style={{ width: `${walletScore}%` }} />
+                  <div className="bg-[#D4AF37] h-full transition-all duration-1000" style={{ width: `${walletScore}%` }} />
                 </div>
               </div>
 
-              <button onClick={handleShare} className="mt-8 px-6 py-2 bg-[#D4AF37] text-black rounded-full font-black text-[10px] uppercase flex items-center gap-2 mx-auto active:scale-95 transition-transform">
+              <button onClick={handleShare} className="mt-8 px-6 py-2 bg-[#D4AF37] text-black rounded-full font-black text-[9px] uppercase flex items-center gap-2 mx-auto active:scale-95 transition-all shadow-lg">
                 <Share1Icon width={12} height={12} /> Share Score
               </button>
            </div>
         )}
       </div>
 
-      {/* NAV */}
+      {/* FOOTER NAV */}
       <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[80%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-50 ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
         {[
           { id: 'scanning', icon: <MagnifyingGlassIcon width={18} height={18} />, label: 'Guards' },
@@ -249,7 +268,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
 
       {/* PURIFY BUTTON */}
       {selectedIds.size > 0 && activeTab === "revoke" && (
-        <div className="fixed bottom-24 left-0 right-0 px-10 max-w-[180px] mx-auto z-50">
+        <div className="fixed bottom-24 left-0 right-0 px-10 max-w-[180px] mx-auto z-50 animate-in slide-in-from-bottom-5">
           <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-3.5 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 transition-all uppercase italic">
             {isLoading ? <UpdateIcon className="animate-spin" /> : `Purify ${selectedIds.size}`}
           </button>
