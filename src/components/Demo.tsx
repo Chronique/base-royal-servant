@@ -1,44 +1,44 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { useAccount, useConnect } from "wagmi";
 import { useSendCalls } from 'wagmi/experimental';
 import { AllowanceCard, type AllowanceItem } from "./AllowanceCard"; 
 import { encodeFunctionData, type Address } from 'viem';
 import { 
-  Search, Trophy, Trash2, ShieldCheck, AlertOctagon, 
-  RefreshCw, Share2, CheckCircle2, Sun, Moon 
-} from "lucide-react";
-
-interface ExtendedAllowanceItem extends AllowanceItem {
-  spenderLabel?: string;
-}
-
-const erc20Abi = [{ name: 'approve', type: 'function', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] }] as const;
-const nftAbi = [{ name: 'setApprovalForAll', type: 'function', inputs: [{ name: 'operator', type: 'address' }, { name: 'approved', type: 'bool' }], outputs: [] }] as const;
+  MagnifyingGlassIcon, 
+  StarIcon, 
+  TrashIcon, 
+  CheckCircledIcon, 
+  ExclamationTriangleIcon, 
+  UpdateIcon, 
+  Share1Icon, 
+  SunIcon, 
+  MoonIcon, 
+  ChevronLeftIcon, 
+  ChevronRightIcon,
+  CircleIcon
+} from "@radix-ui/react-icons";
 
 export const Demo = ({ userFid }: { userFid?: number }) => {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const { sendCalls } = useSendCalls();
 
-  // State Management
   const [activeTab, setActiveTab] = useState("scanning");
-  const [allowances, setAllowances] = useState<ExtendedAllowanceItem[]>([]);
+  const [allowances, setAllowances] = useState<AllowanceItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [walletScore, setWalletScore] = useState(100);
-  const [isSuccess, setIsSuccess] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  
+  // Paginasi
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  // --- THEME CONTROL ---
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setTheme(newTheme);
-    document.documentElement.classList.toggle("dark");
-  };
+  const toggleTheme = () => setTheme(prev => prev === "dark" ? "light" : "dark");
 
   useEffect(() => {
     if (isConnected) return;
@@ -50,7 +50,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const loadSecurityData = useCallback(async () => {
     if (!address) return;
     setIsLoading(true);
-    setIsSuccess(false);
     try {
       const res = await fetch(
         `https://deep-index.moralis.io/api/v2.2/wallets/${address}/approvals?chain=base`,
@@ -59,96 +58,88 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       const json = await res.json();
       const rawList = json.result || [];
 
-      const enriched: ExtendedAllowanceItem[] = rawList.map((item: any, idx: number) => {
-        const isNFT = ["ERC721", "ERC1155"].includes(item.token.contract_type?.toUpperCase());
-        return {
-          id: `mol-${idx}`,
-          tokenAddress: item.token.address,
-          tokenSymbol: item.token.symbol || "UNKNOWN",
-          spender: item.spender.address,
-          spenderLabel: item.spender.address_label || "Contract",
-          amount: item.value_formatted === "Unlimited" ? "∞" : item.value_formatted,
-          risk: (item.spender.address_label === null || item.value === "unlimited") ? 'high' : 'low',
-          type: isNFT ? "NFT" : "TOKEN"
-        };
-      });
+      const enriched: AllowanceItem[] = rawList.map((item: any, idx: number) => ({
+        id: `mol-${idx}`,
+        tokenAddress: item.token.address,
+        tokenSymbol: item.token.symbol || "UNKNOWN",
+        tokenLogo: item.token.logo, 
+        spender: item.spender.address,
+        spenderLabel: item.spender.address_label || "Contract",
+        amount: item.value_formatted === "Unlimited" ? "∞" : item.value_formatted,
+        risk: (item.spender.address_label === null || item.value === "unlimited") ? 'high' : 'low',
+        type: ["ERC721", "ERC1155"].includes(item.token.contract_type?.toUpperCase()) ? "NFT" : "TOKEN"
+      }));
 
       setAllowances(enriched);
-      const highRisks = enriched.filter((a: ExtendedAllowanceItem) => a.risk === 'high').length;
+      setCurrentPage(1);
+      const highRisks = enriched.filter(a => a.risk === 'high').length;
       setWalletScore(Math.max(100 - (highRisks * 10), 0));
     } catch (err) { console.error(err); } finally { setIsLoading(false); }
   }, [address]);
 
   useEffect(() => { if (isConnected) loadSecurityData(); }, [isConnected, loadSecurityData]);
 
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return allowances.slice(start, start + itemsPerPage);
+  }, [allowances, currentPage]);
+
+  const totalPages = Math.ceil(allowances.length / itemsPerPage);
+
   const executeRevoke = async () => {
     if (selectedIds.size === 0) return;
     setIsLoading(true);
     try {
       const calls = Array.from(selectedIds).map(id => {
-        const item = allowances.find((a: ExtendedAllowanceItem) => a.id === id);
+        const item = allowances.find(a => a.id === id);
         if (!item) return null;
         return {
           to: item.tokenAddress as Address,
           value: 0n,
           data: item.type === "TOKEN" 
-            ? encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [item.spender as Address, 0n] })
-            : encodeFunctionData({ abi: nftAbi, functionName: 'setApprovalForAll', args: [item.spender as Address, false] }),
+            ? encodeFunctionData({ abi: [{ name: 'approve', type: 'function', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] }], functionName: 'approve', args: [item.spender as Address, 0n] })
+            : encodeFunctionData({ abi: [{ name: 'setApprovalForAll', type: 'function', inputs: [{ name: 'operator', type: 'address' }, { name: 'approved', type: 'bool' }], outputs: [] }], functionName: 'setApprovalForAll', args: [item.spender as Address, false] }),
         };
       }).filter(Boolean);
 
       await sendCalls({ calls: calls as any });
       setSelectedIds(new Set());
-      setIsSuccess(true);
     } catch (e) { console.error(e); } finally { setIsLoading(false); }
   };
 
-  if (!isConnected) return <div className="p-20 text-center font-black text-[#0052FF] animate-pulse italic">SERVANT IS READYING...</div>;
+  if (!isConnected) return <div className={`p-20 text-center font-black animate-pulse italic ${theme === 'dark' ? 'text-[#D4AF37]' : 'text-blue-600'}`}>SOWAN...</div>;
 
   return (
-    <div className={`max-w-xl mx-auto pb-40 flex flex-col gap-4 font-sans antialiased transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
+    <div className={`max-w-xl mx-auto pb-44 min-h-screen font-sans antialiased transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
       
-      {/* SMALLER ROYAL HEADER */}
-      <div className={`sticky top-0 z-50 p-6 rounded-b-[2rem] shadow-xl text-center relative overflow-hidden border-b-2 border-[#D4AF37] ${theme === 'dark' ? 'bg-[#1A1A1A]' : 'bg-white'}`}>
-        <div className="relative z-10 flex flex-col items-center">
-          <div className="w-full flex justify-between items-center mb-2">
-            <p className="text-[9px] font-black text-[#D4AF37] tracking-[0.3em] uppercase italic">Abdi Dalem</p>
-            <button onClick={toggleTheme} className="p-2 rounded-full bg-gray-500/10 hover:bg-gray-500/20">
-              {theme === 'dark' ? <Sun size={14} className="text-[#D4AF37]" /> : <Moon size={14} />}
-            </button>
-          </div>
-          <h1 className="text-5xl font-black italic tracking-tighter leading-none">
-            {activeTab === 'score' ? walletScore : allowances.length}
-          </h1>
-          <p className="text-[10px] font-bold opacity-50 uppercase tracking-widest mt-1">
-            {activeTab === 'score' ? "Royal Trust" : "Guards Found"}
-          </p>
+      {/* COMPACT HEADER */}
+      <div className={`sticky top-0 z-50 p-4 rounded-b-[1.5rem] shadow-2xl text-center border-b border-[#D4AF37] ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
+        <div className="flex justify-between items-center mb-1">
+          <p className="text-[8px] font-black text-[#D4AF37] tracking-[0.3em] uppercase italic">Royal Servant</p>
+          <button onClick={toggleTheme} className={`p-1.5 rounded-full ${theme === 'dark' ? 'bg-white/5 text-[#D4AF37]' : 'bg-black/5 text-gray-600'}`}>
+            {theme === 'dark' ? <SunIcon width={14} height={14} /> : <MoonIcon width={14} height={14} />}
+          </button>
         </div>
+        <h1 className="text-4xl font-black italic tracking-tighter leading-none">
+          {activeTab === 'score' ? walletScore : allowances.length}
+        </h1>
       </div>
 
-      {/* CONTENT Area with proper bottom padding */}
-      <div className="px-4 min-h-[300px]">
-        {isSuccess && activeTab === "revoke" && (
-           <div className="mb-4 p-6 bg-green-500/10 border border-green-500/20 rounded-[1.5rem] text-center animate-in zoom-in-95">
-              <CheckCircle2 size={32} className="text-green-500 mx-auto mb-2" />
-              <p className="font-black text-green-500 italic text-sm uppercase">Purification Request Sent!</p>
-           </div>
-        )}
-
+      <div className="px-4 mt-6">
         {activeTab === "scanning" && (
           <div className="space-y-2">
-            {allowances.map((item) => (
-              <div key={item.id} className={`p-4 border rounded-[1.5rem] flex justify-between items-center transition-all ${theme === 'dark' ? 'bg-[#151515] border-white/5' : 'bg-white border-gray-100 shadow-sm'}`}>
+            {paginatedItems.map((item) => (
+              <div key={item.id} className={`p-3 border rounded-[1.2rem] flex justify-between items-center ${theme === 'dark' ? 'bg-[#151515] border-white/5' : 'bg-white border-gray-100 shadow-sm'}`}>
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-xl ${item.risk === 'high' ? 'bg-red-500/10 text-red-500' : 'bg-[#D4AF37]/10 text-[#D4AF37]'}`}>
-                    {item.risk === 'high' ? <AlertOctagon size={18} /> : <ShieldCheck size={18} />}
+                  <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-gray-500/10 flex items-center justify-center">
+                    {item.tokenLogo ? <img src={item.tokenLogo} className="w-full h-full object-cover" /> : <CircleIcon className="text-[#D4AF37]" />}
                   </div>
                   <div>
-                    <p className="font-black text-sm leading-none mb-1">{item.tokenSymbol}</p>
-                    <p className="text-[9px] font-bold opacity-40 uppercase truncate max-w-[150px]">{item.spenderLabel}</p>
+                    <p className="font-black text-xs leading-none mb-1">{item.tokenSymbol}</p>
+                    <p className="text-[8px] opacity-30 truncate max-w-[130px]">VIA: {item.spenderLabel}</p>
                   </div>
                 </div>
-                <p className="text-[10px] font-black">{item.amount}</p>
+                <p className="text-[9px] font-black">{item.amount}</p>
               </div>
             ))}
           </div>
@@ -157,60 +148,64 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         {activeTab === "revoke" && (
           <div className="space-y-2">
              <div className="flex justify-between items-center px-2 mb-2">
-                <h3 className="text-[10px] font-black opacity-30 uppercase italic">Gatekeeper List</h3>
-                <button onClick={() => setSelectedIds(selectedIds.size === allowances.length ? new Set() : new Set(allowances.map(a => a.id)))} className="text-[10px] font-black text-[#D4AF37] uppercase underline underline-offset-4">
+                <button onClick={() => setSelectedIds(selectedIds.size === allowances.length ? new Set() : new Set(allowances.map(a => a.id)))} className="text-[9px] font-black text-[#D4AF37] uppercase underline">
                    {selectedIds.size === allowances.length ? "Deselect All" : "Select All"}
                 </button>
+                <p className="text-[8px] font-bold opacity-40 uppercase">Page {currentPage} of {totalPages}</p>
              </div>
-             {allowances.map((item) => (
-               <AllowanceCard 
-                 key={item.id} 
-                 item={item} 
-                 selected={selectedIds.has(item.id)} 
-                 onToggle={(id) => {
-                    const next = new Set(selectedIds);
-                    if (next.has(id)) next.delete(id); else next.add(id);
-                    setSelectedIds(next);
-                 }} 
-               />
+             {paginatedItems.map((item) => (
+               <AllowanceCard key={item.id} item={item} selected={selectedIds.has(item.id)} theme={theme} onToggle={(id) => {
+                  const next = new Set(selectedIds);
+                  if (next.has(id)) next.delete(id); else next.add(id);
+                  setSelectedIds(next);
+               }} />
              ))}
           </div>
         )}
 
+        {/* PAGINATION */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-3 mt-6">
+            <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="p-1.5 rounded-full bg-[#D4AF37]/10 disabled:opacity-10 text-[#D4AF37]">
+              <ChevronLeftIcon />
+            </button>
+            <span className="text-[10px] font-black">{currentPage} / {totalPages}</span>
+            <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="p-1.5 rounded-full bg-[#D4AF37]/10 disabled:opacity-10 text-[#D4AF37]">
+              <ChevronRightIcon />
+            </button>
+          </div>
+        )}
+
         {activeTab === "score" && (
-           <div className={`p-10 rounded-[2.5rem] border-2 border-dashed border-[#D4AF37]/20 text-center ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
-              <Trophy size={60} className="mx-auto text-[#D4AF37] mb-4" />
-              <h2 className="text-2xl font-black italic tracking-tighter uppercase">Subject #{userFid || '000'}</h2>
-              <button onClick={() => sdk.actions.composeCast({ text: `🛡️ Cleaned my wallet! Rank: ${walletScore}/100.`, embeds: [window.location.origin] })} className="mt-6 px-6 py-2 bg-[#D4AF37] text-black rounded-full font-black text-[10px] uppercase flex items-center gap-2 mx-auto">
-                <Share2 size={12} /> Broadcast Safety
+           <div className={`p-8 rounded-[2rem] border-2 border-dashed border-[#D4AF37]/20 text-center ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
+              <StarIcon width={48} height={48} className="mx-auto text-[#D4AF37] mb-4" />
+              <h2 className="text-xl font-black italic uppercase">Subject #{userFid || '000'}</h2>
+              <button onClick={() => sdk.actions.composeCast({ text: `🛡️ Cleaned my wallet with Royal Servant! Rank: ${walletScore}/100.`, embeds: [window.location.origin] })} className="mt-4 px-5 py-2 bg-[#D4AF37] text-black rounded-full font-black text-[9px] uppercase flex items-center gap-2 mx-auto">
+                <Share1Icon width={10} height={10} /> Broadcast
               </button>
            </div>
         )}
       </div>
 
-      {/* COMPACT FLOATING NAV */}
-      <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[85%] max-w-sm border rounded-[2rem] p-1.5 shadow-2xl flex justify-around z-50 transition-colors ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
+      {/* COMPACT NAV */}
+      <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[80%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-50 ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
         {[
-          { id: 'scanning', icon: <Search size={18} />, label: 'Guards' },
-          { id: 'revoke', icon: <Trash2 size={18} />, label: 'Purify' },
-          { id: 'score', icon: <Trophy size={18} />, label: 'Rank' }
+          { id: 'scanning', icon: <MagnifyingGlassIcon width={18} height={18} />, label: 'Guards' },
+          { id: 'revoke', icon: <TrashIcon width={18} height={18} />, label: 'Purify' },
+          { id: 'score', icon: <StarIcon width={18} height={18} />, label: 'Rank' }
         ].map((tab) => (
-          <button 
-            key={tab.id}
-            onClick={() => { setActiveTab(tab.id); setIsSuccess(false); }} 
-            className={`flex-1 py-3 rounded-[1.5rem] flex flex-col items-center gap-0.5 transition-all ${activeTab === tab.id ? 'bg-[#D4AF37] text-black shadow-lg' : 'text-gray-500 opacity-60'}`}
-          >
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 py-2.5 rounded-[1.5rem] flex flex-col items-center transition-all ${activeTab === tab.id ? 'bg-[#D4AF37] text-black shadow-lg' : 'text-gray-500 opacity-50'}`}>
             {tab.icon}
-            <span className="text-[7px] font-black uppercase">{tab.label}</span>
+            <span className="text-[6px] font-black uppercase mt-0.5">{tab.label}</span>
           </button>
         ))}
       </div>
 
-      {/* COMPACT PURIFY BUTTON */}
+      {/* PURIFY BUTTON */}
       {selectedIds.size > 0 && activeTab === "revoke" && (
-        <div className="fixed bottom-24 left-0 right-0 px-10 max-w-sm mx-auto z-50 animate-in slide-in-from-bottom-5">
-          <button onClick={executeRevoke} disabled={isLoading} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-4 rounded-full font-black text-sm shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 transition-all uppercase italic">
-            {isLoading ? "Purifying..." : `Purify ${selectedIds.size} Risks`}
+        <div className="fixed bottom-22 left-0 right-0 px-10 max-w-xs mx-auto z-50">
+          <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-3.5 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 uppercase italic">
+            {isLoading ? <UpdateIcon className="animate-spin" /> : `Purify ${selectedIds.size}`}
           </button>
         </div>
       )}
