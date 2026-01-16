@@ -16,10 +16,10 @@ export async function GET() {
       homeUrl: METADATA.homeUrl,
       imageUrl: METADATA.bannerImageUrl,
       splashImageUrl: METADATA.iconImageUrl,
-      webhookUrl: "https://base-royal-servant.vercel.app/api/webhook"
       splashBackgroundColor: METADATA.splashBackgroundColor,
       description: METADATA.description,
       ogTitle: METADATA.name,
+      webhookUrl: "https://base-royal-servant.vercel.app/api/auth/webhook",
       ogDescription: METADATA.description,
       ogImageUrl: METADATA.bannerImageUrl,
       primaryCategory: "developer-tools",
