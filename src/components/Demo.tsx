@@ -12,14 +12,14 @@ import {
   StarIcon, 
   TrashIcon, 
   CheckCircledIcon, 
-  ExclamationTriangleIcon, 
   UpdateIcon, 
   Share1Icon, 
   SunIcon, 
   MoonIcon, 
   ChevronLeftIcon, 
   ChevronRightIcon,
-  CircleIcon
+  CircleIcon,
+  PersonIcon
 } from "@radix-ui/react-icons";
 
 export const Demo = ({ userFid }: { userFid?: number }) => {
@@ -86,6 +86,13 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
 
   const totalPages = Math.ceil(allowances.length / itemsPerPage);
 
+  const handleShare = () => {
+    sdk.actions.composeCast({
+      text: `🛡️ Check your wallet health with Royal Servant! \nMy security score: ${walletScore}/100.`,
+      embeds: [window.location.origin]
+    });
+  };
+
   const executeRevoke = async () => {
     if (selectedIds.size === 0) return;
     setIsLoading(true);
@@ -112,7 +119,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   return (
     <div className={`max-w-xl mx-auto pb-44 min-h-screen font-sans antialiased transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
       
-      {/* COMPACT HEADER */}
+      {/* HEADER COMPACT */}
       <div className={`sticky top-0 z-50 p-4 rounded-b-[1.5rem] shadow-2xl text-center border-b border-[#D4AF37] ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
         <div className="flex justify-between items-center mb-1">
           <p className="text-[8px] font-black text-[#D4AF37] tracking-[0.3em] uppercase italic">Royal Servant</p>
@@ -127,61 +134,91 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
 
       <div className="px-4 mt-6">
         {activeTab === "scanning" && (
-          <div className="space-y-2">
-            {paginatedItems.map((item) => (
-              <div key={item.id} className={`p-3 border rounded-[1.2rem] flex justify-between items-center ${theme === 'dark' ? 'bg-[#151515] border-white/5' : 'bg-white border-gray-100 shadow-sm'}`}>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-gray-500/10 flex items-center justify-center">
-                    {item.tokenLogo ? <img src={item.tokenLogo} className="w-full h-full object-cover" /> : <CircleIcon className="text-[#D4AF37]" />}
+          <>
+            <div className="space-y-2">
+              {paginatedItems.map((item) => (
+                <div key={item.id} className={`p-3 border rounded-[1.2rem] flex justify-between items-center ${theme === 'dark' ? 'bg-[#151515] border-white/5' : 'bg-white border-gray-100 shadow-sm'}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-gray-500/10 flex items-center justify-center">
+                      {item.tokenLogo ? <img src={item.tokenLogo} className="w-full h-full object-cover" /> : <CircleIcon className="text-[#D4AF37]" />}
+                    </div>
+                    <div>
+                      <p className="font-black text-xs leading-none mb-1">{item.tokenSymbol}</p>
+                      <p className="text-[8px] opacity-30 truncate max-w-[130px]">VIA: {item.spenderLabel}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-black text-xs leading-none mb-1">{item.tokenSymbol}</p>
-                    <p className="text-[8px] opacity-30 truncate max-w-[130px]">VIA: {item.spenderLabel}</p>
-                  </div>
+                  <p className="text-[9px] font-black">{item.amount}</p>
                 </div>
-                <p className="text-[9px] font-black">{item.amount}</p>
+              ))}
+            </div>
+            {/* Paginasi hanya tampil di tab Scan/Purify */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-3 mt-6">
+                <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="p-1.5 rounded-full bg-[#D4AF37]/10 disabled:opacity-10 text-[#D4AF37]">
+                  <ChevronLeftIcon />
+                </button>
+                <span className="text-[10px] font-black">{currentPage} / {totalPages}</span>
+                <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="p-1.5 rounded-full bg-[#D4AF37]/10 disabled:opacity-10 text-[#D4AF37]">
+                  <ChevronRightIcon />
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
 
         {activeTab === "revoke" && (
-          <div className="space-y-2">
-             <div className="flex justify-between items-center px-2 mb-2">
-                <button onClick={() => setSelectedIds(selectedIds.size === allowances.length ? new Set() : new Set(allowances.map(a => a.id)))} className="text-[9px] font-black text-[#D4AF37] uppercase underline">
-                   {selectedIds.size === allowances.length ? "Deselect All" : "Select All"}
+          <>
+            <div className="space-y-2">
+               <div className="flex justify-between items-center px-2 mb-2">
+                  {/* Sembunyikan Select All jika tidak ada item */}
+                  {allowances.length > 0 ? (
+                    <button onClick={() => setSelectedIds(selectedIds.size === allowances.length ? new Set() : new Set(allowances.map(a => a.id)))} className="text-[9px] font-black text-[#D4AF37] uppercase underline">
+                       {selectedIds.size === allowances.length ? "Deselect All" : "Select All"}
+                    </button>
+                  ) : <div />}
+                  <p className="text-[8px] font-bold opacity-40 uppercase">Page {currentPage} of {totalPages}</p>
+               </div>
+               {paginatedItems.map((item) => (
+                 <AllowanceCard key={item.id} item={item} selected={selectedIds.has(item.id)} theme={theme} onToggle={(id) => {
+                    const next = new Set(selectedIds);
+                    if (next.has(id)) next.delete(id); else next.add(id);
+                    setSelectedIds(next);
+                 }} />
+               ))}
+            </div>
+            {/* Paginasi hanya tampil di tab Scan/Purify */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-3 mt-6">
+                <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="p-1.5 rounded-full bg-[#D4AF37]/10 disabled:opacity-10 text-[#D4AF37]">
+                  <ChevronLeftIcon />
                 </button>
-                <p className="text-[8px] font-bold opacity-40 uppercase">Page {currentPage} of {totalPages}</p>
-             </div>
-             {paginatedItems.map((item) => (
-               <AllowanceCard key={item.id} item={item} selected={selectedIds.has(item.id)} theme={theme} onToggle={(id) => {
-                  const next = new Set(selectedIds);
-                  if (next.has(id)) next.delete(id); else next.add(id);
-                  setSelectedIds(next);
-               }} />
-             ))}
-          </div>
-        )}
-
-        {/* PAGINATION */}
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-3 mt-6">
-            <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="p-1.5 rounded-full bg-[#D4AF37]/10 disabled:opacity-10 text-[#D4AF37]">
-              <ChevronLeftIcon />
-            </button>
-            <span className="text-[10px] font-black">{currentPage} / {totalPages}</span>
-            <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="p-1.5 rounded-full bg-[#D4AF37]/10 disabled:opacity-10 text-[#D4AF37]">
-              <ChevronRightIcon />
-            </button>
-          </div>
+                <span className="text-[10px] font-black">{currentPage} / {totalPages}</span>
+                <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="p-1.5 rounded-full bg-[#D4AF37]/10 disabled:opacity-10 text-[#D4AF37]">
+                  <ChevronRightIcon />
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {activeTab === "score" && (
            <div className={`p-8 rounded-[2rem] border-2 border-dashed border-[#D4AF37]/20 text-center ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
-              <StarIcon width={48} height={48} className="mx-auto text-[#D4AF37] mb-4" />
-              <h2 className="text-xl font-black italic uppercase">Subject #{userFid || '000'}</h2>
-              <button onClick={() => sdk.actions.composeCast({ text: `🛡️ Cleaned my wallet with Royal Servant! Rank: ${walletScore}/100.`, embeds: [window.location.origin] })} className="mt-4 px-5 py-2 bg-[#D4AF37] text-black rounded-full font-black text-[9px] uppercase flex items-center gap-2 mx-auto">
-                <Share1Icon width={10} height={10} /> Broadcast
+              <PersonIcon width={48} height={48} className="mx-auto text-[#D4AF37] mb-2" />
+              <h2 className="text-xl font-black italic uppercase mb-1">FID: {userFid || 'Guest'}</h2>
+              <p className="text-[9px] opacity-40 uppercase mb-6">{address?.slice(0, 10)}...{address?.slice(-8)}</p>
+              
+              <div className="flex flex-col gap-2 max-w-[150px] mx-auto">
+                <div className="flex justify-between text-[10px] font-black">
+                  <span>HEALTH</span>
+                  <span className="text-[#D4AF37]">{walletScore}%</span>
+                </div>
+                <div className="w-full bg-gray-500/20 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-[#D4AF37] h-full transition-all" style={{ width: `${walletScore}%` }} />
+                </div>
+              </div>
+
+              <button onClick={handleShare} className="mt-8 px-5 py-2 bg-[#D4AF37] text-black rounded-full font-black text-[9px] uppercase flex items-center gap-2 mx-auto transition-transform active:scale-95">
+                <Share1Icon width={10} height={10} /> Share Score
               </button>
            </div>
         )}
@@ -194,7 +231,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           { id: 'revoke', icon: <TrashIcon width={18} height={18} />, label: 'Purify' },
           { id: 'score', icon: <StarIcon width={18} height={18} />, label: 'Rank' }
         ].map((tab) => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 py-2.5 rounded-[1.5rem] flex flex-col items-center transition-all ${activeTab === tab.id ? 'bg-[#D4AF37] text-black shadow-lg' : 'text-gray-500 opacity-50'}`}>
+          <button key={tab.id} onClick={() => { setActiveTab(tab.id); }} className={`flex-1 py-2.5 rounded-[1.5rem] flex flex-col items-center transition-all ${activeTab === tab.id ? 'bg-[#D4AF37] text-black shadow-lg scale-105' : 'text-gray-500 opacity-50'}`}>
             {tab.icon}
             <span className="text-[6px] font-black uppercase mt-0.5">{tab.label}</span>
           </button>
@@ -203,8 +240,8 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
 
       {/* PURIFY BUTTON */}
       {selectedIds.size > 0 && activeTab === "revoke" && (
-        <div className="fixed bottom-22 left-0 right-0 px-10 max-w-xs mx-auto z-50">
-          <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-3.5 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 uppercase italic">
+        <div className="fixed bottom-22 left-0 right-0 px-10 max-w-[200px] mx-auto z-50">
+          <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-3 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 transition-all uppercase italic">
             {isLoading ? <UpdateIcon className="animate-spin" /> : `Purify ${selectedIds.size}`}
           </button>
         </div>

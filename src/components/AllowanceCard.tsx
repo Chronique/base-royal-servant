@@ -6,7 +6,7 @@ import {
   ImageIcon, 
   CircleIcon, 
   CheckCircledIcon 
-} from "@radix-ui/react-icons"; // Menggunakan Radix Icons
+} from "@radix-ui/react-icons";
 
 export interface AllowanceItem {
   id: string;
@@ -40,7 +40,6 @@ export const AllowanceCard = memo(({ item, selected, onToggle, theme }: {
       }`}
     >
       <div className="flex items-center gap-3">
-        {/* Logo Koin Asli atau Fallback */}
         <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${
           !item.tokenLogo && (isHighRisk ? 'bg-red-500/20 text-red-500' : 'bg-[#D4AF37]/20 text-[#D4AF37]')
         }`}>
@@ -64,9 +63,9 @@ export const AllowanceCard = memo(({ item, selected, onToggle, theme }: {
       </div>
 
       <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
-        selected ? "bg-[#D4AF37] border-[#D4AF37]" : "border-gray-500/30"
+        selected ? "bg-[#D4AF37] border-[#D4AF37]" : theme === 'dark' ? 'border-white/20' : 'border-gray-300'
       }`}>
-        {selected && <CheckCircledIcon width={14} height={14} className="text-black" />}
+        {selected && <CheckCircledIcon width={14} height={14} className={theme === 'dark' ? 'text-white' : 'text-black'} />}
       </div>
     </div>
   );
