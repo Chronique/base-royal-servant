@@ -8,7 +8,8 @@ import { useSendCalls } from 'wagmi/experimental';
 import { AllowanceCard, type AllowanceItem } from "./AllowanceCard"; 
 import { encodeFunctionData, type Address } from 'viem';
 import { 
-  Search, Trophy, Trash2, ShieldCheck, AlertOctagon, RefreshCw, Share2, CheckCircle2 
+  Search, Trophy, Trash2, ShieldCheck, AlertOctagon, 
+  RefreshCw, Share2, CheckCircle2, Sun, Moon 
 } from "lucide-react";
 
 interface ExtendedAllowanceItem extends AllowanceItem {
@@ -26,39 +27,26 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   // State Management
   const [activeTab, setActiveTab] = useState("scanning");
   const [allowances, setAllowances] = useState<ExtendedAllowanceItem[]>([]);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set()); // Pakai Set untuk performa
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [walletScore, setWalletScore] = useState(100);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
 
-  // --- OPTIMIZED ACTIONS ---
-  const handleToggle = useCallback((id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const selectAll = useCallback(() => {
-    if (selectedIds.size === allowances.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(allowances.map(a => a.id)));
-    }
-  }, [allowances, selectedIds.size]);
+  // --- THEME CONTROL ---
+  const toggleTheme = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setTheme(newTheme);
+    document.documentElement.classList.toggle("dark");
+  };
 
   useEffect(() => {
     if (isConnected) return;
     const farcaster = connectors.find((c) => c.id === "farcaster");
-    const cbWallet = connectors.find((c) => c.id === "coinbaseWalletSDK");
     if (farcaster) connect({ connector: farcaster });
-    else if (cbWallet) connect({ connector: cbWallet });
     sdk.actions.ready();
   }, [connectors, isConnected, connect]);
 
-  // --- MORALIS DATA FETCH ---
   const loadSecurityData = useCallback(async () => {
     if (!address) return;
     setIsLoading(true);
@@ -86,7 +74,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       });
 
       setAllowances(enriched);
-      // Fix Error 7006: Berikan tipe eksplisit pada parameter 'a'
       const highRisks = enriched.filter((a: ExtendedAllowanceItem) => a.risk === 'high').length;
       setWalletScore(Math.max(100 - (highRisks * 10), 0));
     } catch (err) { console.error(err); } finally { setIsLoading(false); }
@@ -94,16 +81,13 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
 
   useEffect(() => { if (isConnected) loadSecurityData(); }, [isConnected, loadSecurityData]);
 
-  // --- ATOMIC BATCH REVOKE ---
   const executeRevoke = async () => {
     if (selectedIds.size === 0) return;
     setIsLoading(true);
     try {
       const calls = Array.from(selectedIds).map(id => {
-        // Fix Error 7006: Berikan tipe eksplisit pada parameter 'a'
         const item = allowances.find((a: ExtendedAllowanceItem) => a.id === id);
         if (!item) return null;
-
         return {
           to: item.tokenAddress as Address,
           value: 0n,
@@ -119,66 +103,62 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
     } catch (e) { console.error(e); } finally { setIsLoading(false); }
   };
 
-  if (!isConnected) return <div className="p-20 text-center font-black text-[#0052FF] animate-pulse italic">AWAKENING SERVANT...</div>;
+  if (!isConnected) return <div className="p-20 text-center font-black text-[#0052FF] animate-pulse italic">SERVANT IS READYING...</div>;
 
   return (
-    <div className="max-w-xl mx-auto p-4 pb-32 flex flex-col gap-6 font-sans antialiased bg-[#FAFAFA] min-h-screen">
-      {/* ROYAL HEADER */}
-      <div className="bg-[#1A1A1A] p-10 rounded-[3rem] text-white shadow-2xl text-center relative overflow-hidden border-b-4 border-[#D4AF37]">
-        <div className="relative z-10">
-          <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.5em] uppercase italic mb-2">Abdi Dalem Security</p>
-          <h1 className="text-7xl font-black italic tracking-tighter leading-none">
+    <div className={`max-w-xl mx-auto pb-40 flex flex-col gap-4 font-sans antialiased transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
+      
+      {/* SMALLER ROYAL HEADER */}
+      <div className={`sticky top-0 z-50 p-6 rounded-b-[2rem] shadow-xl text-center relative overflow-hidden border-b-2 border-[#D4AF37] ${theme === 'dark' ? 'bg-[#1A1A1A]' : 'bg-white'}`}>
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="w-full flex justify-between items-center mb-2">
+            <p className="text-[9px] font-black text-[#D4AF37] tracking-[0.3em] uppercase italic">Abdi Dalem</p>
+            <button onClick={toggleTheme} className="p-2 rounded-full bg-gray-500/10 hover:bg-gray-500/20">
+              {theme === 'dark' ? <Sun size={14} className="text-[#D4AF37]" /> : <Moon size={14} />}
+            </button>
+          </div>
+          <h1 className="text-5xl font-black italic tracking-tighter leading-none">
             {activeTab === 'score' ? walletScore : allowances.length}
           </h1>
-          <p className="text-xs font-bold opacity-60 mt-2 uppercase tracking-widest">
-            {activeTab === 'score' ? "Royal Trust Rank" : "Gatekeepers Found"}
+          <p className="text-[10px] font-bold opacity-50 uppercase tracking-widest mt-1">
+            {activeTab === 'score' ? "Royal Trust" : "Guards Found"}
           </p>
-          <div className="flex justify-center gap-4 mt-6">
-             <button onClick={loadSecurityData} className="p-3 bg-white/10 rounded-full hover:bg-white/20 border border-white/10">
-                <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
-             </button>
-             <button onClick={() => sdk.actions.composeCast({ text: `🛡️ My Keraton is safe! Rank: ${walletScore}/100. Scan yours:`, embeds: [window.location.origin] })} className="p-3 bg-[#D4AF37] text-black rounded-full hover:scale-110 transition-all">
-                <Share2 size={18} />
-             </button>
-          </div>
         </div>
-        {/* Background Pattern */}
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none" style={{backgroundImage: 'radial-gradient(#D4AF37 0.7px, transparent 0.7px)', backgroundSize: '11px 11px'}} />
       </div>
 
-      <div className="min-h-[400px] px-1">
+      {/* CONTENT Area with proper bottom padding */}
+      <div className="px-4 min-h-[300px]">
         {isSuccess && activeTab === "revoke" && (
-           <div className="mb-6 p-8 bg-green-50 border-2 border-green-200 rounded-[2.5rem] text-center animate-in zoom-in-95 shadow-sm">
-              <CheckCircle2 size={48} className="text-green-500 mx-auto mb-3" />
-              <p className="font-black text-green-800 italic uppercase">Keraton Purified!</p>
+           <div className="mb-4 p-6 bg-green-500/10 border border-green-500/20 rounded-[1.5rem] text-center animate-in zoom-in-95">
+              <CheckCircle2 size={32} className="text-green-500 mx-auto mb-2" />
+              <p className="font-black text-green-500 italic text-sm uppercase">Purification Request Sent!</p>
            </div>
         )}
 
         {activeTab === "scanning" && (
-          <div className="space-y-4">
-            <h3 className="text-[11px] font-black text-[#3E2723] uppercase tracking-widest italic opacity-40 px-2">Registry of Guards</h3>
+          <div className="space-y-2">
             {allowances.map((item) => (
-              <div key={item.id} className="p-5 border-2 border-gray-100 rounded-[2rem] flex justify-between items-center bg-white shadow-sm hover:border-[#D4AF37]/30 transition-all">
-                <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-2xl ${item.risk === 'high' ? 'bg-red-50 text-red-500' : 'bg-[#F5F5DC] text-[#D4AF37]'}`}>
-                    {item.risk === 'high' ? <AlertOctagon size={24} /> : <ShieldCheck size={24} />}
+              <div key={item.id} className={`p-4 border rounded-[1.5rem] flex justify-between items-center transition-all ${theme === 'dark' ? 'bg-[#151515] border-white/5' : 'bg-white border-gray-100 shadow-sm'}`}>
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl ${item.risk === 'high' ? 'bg-red-500/10 text-red-500' : 'bg-[#D4AF37]/10 text-[#D4AF37]'}`}>
+                    {item.risk === 'high' ? <AlertOctagon size={18} /> : <ShieldCheck size={18} />}
                   </div>
-                  <div className="flex flex-col">
-                    <p className="font-black text-base text-[#3E2723] leading-tight">{item.tokenSymbol}</p>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase truncate max-w-[140px] mt-0.5">Via: {item.spenderLabel}</p>
+                  <div>
+                    <p className="font-black text-sm leading-none mb-1">{item.tokenSymbol}</p>
+                    <p className="text-[9px] font-bold opacity-40 uppercase truncate max-w-[150px]">{item.spenderLabel}</p>
                   </div>
                 </div>
-                <p className="text-xs font-black text-[#3E2723]">{item.amount}</p>
+                <p className="text-[10px] font-black">{item.amount}</p>
               </div>
             ))}
           </div>
         )}
 
         {activeTab === "revoke" && (
-          <div className="space-y-3">
-             <div className="flex justify-between items-center px-4 mb-4">
-                <h3 className="text-[11px] font-black text-[#3E2723] uppercase tracking-widest italic opacity-40">Cleansing List</h3>
-                <button onClick={selectAll} className="text-[11px] font-black text-[#D4AF37] uppercase underline underline-offset-4 decoration-2">
+          <div className="space-y-2">
+             <div className="flex justify-between items-center px-2 mb-2">
+                <h3 className="text-[10px] font-black opacity-30 uppercase italic">Gatekeeper List</h3>
+                <button onClick={() => setSelectedIds(selectedIds.size === allowances.length ? new Set() : new Set(allowances.map(a => a.id)))} className="text-[10px] font-black text-[#D4AF37] uppercase underline underline-offset-4">
                    {selectedIds.size === allowances.length ? "Deselect All" : "Select All"}
                 </button>
              </div>
@@ -187,44 +167,50 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
                  key={item.id} 
                  item={item} 
                  selected={selectedIds.has(item.id)} 
-                 onToggle={handleToggle} 
+                 onToggle={(id) => {
+                    const next = new Set(selectedIds);
+                    if (next.has(id)) next.delete(id); else next.add(id);
+                    setSelectedIds(next);
+                 }} 
                />
              ))}
           </div>
         )}
 
         {activeTab === "score" && (
-           <div className="p-12 bg-white rounded-[4rem] border-2 border-[#D4AF37]/20 shadow-xl text-center">
-              <Trophy size={80} className="mx-auto text-[#D4AF37] mb-6 drop-shadow-md" />
-              <h2 className="text-3xl font-black text-[#3E2723] italic tracking-tighter">ROYAL SUBJECT #{userFid || '000'}</h2>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">Legacy Shield Status: Active</p>
+           <div className={`p-10 rounded-[2.5rem] border-2 border-dashed border-[#D4AF37]/20 text-center ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
+              <Trophy size={60} className="mx-auto text-[#D4AF37] mb-4" />
+              <h2 className="text-2xl font-black italic tracking-tighter uppercase">Subject #{userFid || '000'}</h2>
+              <button onClick={() => sdk.actions.composeCast({ text: `🛡️ Cleaned my wallet! Rank: ${walletScore}/100.`, embeds: [window.location.origin] })} className="mt-6 px-6 py-2 bg-[#D4AF37] text-black rounded-full font-black text-[10px] uppercase flex items-center gap-2 mx-auto">
+                <Share2 size={12} /> Broadcast Safety
+              </button>
            </div>
         )}
       </div>
 
-      {/* ROYAL FOOTER NAV */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-[#1A1A1A] border border-white/10 rounded-[3rem] p-2 shadow-2xl flex justify-around z-50">
+      {/* COMPACT FLOATING NAV */}
+      <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[85%] max-w-sm border rounded-[2rem] p-1.5 shadow-2xl flex justify-around z-50 transition-colors ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
         {[
-          { id: 'scanning', icon: <Search size={22} />, label: 'Scan' },
-          { id: 'revoke', icon: <Trash2 size={22} />, label: 'Purify' },
-          { id: 'score', icon: <Trophy size={22} />, label: 'Rank' }
+          { id: 'scanning', icon: <Search size={18} />, label: 'Guards' },
+          { id: 'revoke', icon: <Trash2 size={18} />, label: 'Purify' },
+          { id: 'score', icon: <Trophy size={18} />, label: 'Rank' }
         ].map((tab) => (
           <button 
             key={tab.id}
             onClick={() => { setActiveTab(tab.id); setIsSuccess(false); }} 
-            className={`flex-1 py-5 rounded-[2.5rem] flex flex-col items-center gap-1 transition-all ${activeTab === tab.id ? 'bg-[#D4AF37] text-black shadow-lg scale-105' : 'text-gray-500'}`}
+            className={`flex-1 py-3 rounded-[1.5rem] flex flex-col items-center gap-0.5 transition-all ${activeTab === tab.id ? 'bg-[#D4AF37] text-black shadow-lg' : 'text-gray-500 opacity-60'}`}
           >
             {tab.icon}
-            <span className="text-[8px] font-black uppercase tracking-widest">{tab.label}</span>
+            <span className="text-[7px] font-black uppercase">{tab.label}</span>
           </button>
         ))}
       </div>
 
-      {/* ROYAL PURIFY BUTTON */}
+      {/* COMPACT PURIFY BUTTON */}
       {selectedIds.size > 0 && activeTab === "revoke" && (
-        <div className="fixed bottom-36 left-0 right-0 px-8 max-w-xl mx-auto z-50 animate-in slide-in-from-bottom-10">
-          <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-6 rounded-[3rem] font-black text-xl shadow-2xl border-2 border-[#D4AF37] flex items-center justify-center gap-3 active:scale-95 italic uppercase">
-            {isLoading ? "Purifying..." : `Purify ${selectedIds.size} Gatekeepers`}
+        <div className="fixed bottom-24 left-0 right-0 px-10 max-w-sm mx-auto z-50 animate-in slide-in-from-bottom-5">
+          <button onClick={executeRevoke} disabled={isLoading} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-4 rounded-full font-black text-sm shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 transition-all uppercase italic">
+            {isLoading ? "Purifying..." : `Purify ${selectedIds.size} Risks`}
           </button>
         </div>
       )}

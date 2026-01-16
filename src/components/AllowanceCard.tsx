@@ -1,7 +1,6 @@
 "use client";
 
 import React, { memo } from "react";
-// PERBAIKAN: Ganti 'lucide-center' menjadi 'lucide-react'
 import { ShieldAlert, Image as ImageIcon, Coins, ShieldCheck } from "lucide-react";
 
 export interface AllowanceItem {
@@ -25,33 +24,31 @@ export const AllowanceCard = memo(({ item, selected, onToggle }: {
   return (
     <div 
       onClick={() => onToggle(item.id)}
-      className={`p-5 border-2 rounded-[2rem] flex justify-between items-center cursor-pointer transition-all active:scale-[0.98] ${
+      className={`p-4 border rounded-[1.8rem] flex justify-between items-center cursor-pointer transition-all active:scale-[0.98] ${
         selected 
-          ? 'border-[#D4AF37] bg-[#FFFDF5] shadow-lg' 
-          : 'border-gray-100 bg-white hover:border-gray-200'
+          ? 'border-[#D4AF37] bg-[#D4AF37]/5' 
+          : 'border-transparent bg-white/5 hover:bg-white/10'
       }`}
     >
-      <div className="flex items-center gap-4">
-        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-          isHighRisk ? 'bg-red-50 text-red-600' : 'bg-[#f4f1ea] text-[#D4AF37]'
+      <div className="flex items-center gap-3">
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+          isHighRisk ? 'bg-red-500/20 text-red-500' : 'bg-[#D4AF37]/20 text-[#D4AF37]'
         }`}>
-          {isHighRisk ? <ShieldAlert size={24} /> : item.type === 'NFT' ? <ImageIcon size={24} /> : <Coins size={24} />}
+          {isHighRisk ? <ShieldAlert size={18} /> : item.type === 'NFT' ? <ImageIcon size={18} /> : <Coins size={18} />}
         </div>
 
         <div className="overflow-hidden">
-          <h4 className={`font-black text-base tracking-tight truncate max-w-[140px] ${isHighRisk ? 'text-red-600' : 'text-[#3E2723]'}`}>
+          <h4 className={`font-black text-sm truncate max-w-[120px] ${isHighRisk ? 'text-red-500' : ''}`}>
             {item.tokenSymbol}
           </h4>
-          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-            {isHighRisk ? "⚠️ Risky Guard" : "Royal Guard"}
-          </p>
+          <p className="text-[8px] opacity-40 uppercase truncate max-w-[130px]">Via: {item.spenderLabel}</p>
         </div>
       </div>
 
-      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-        selected ? "bg-[#D4AF37] border-[#D4AF37]" : "border-gray-200"
+      <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+        selected ? "bg-[#D4AF37] border-[#D4AF37]" : "border-gray-500/30"
       }`}>
-        {selected && <ShieldCheck size={14} className="text-white" />}
+        {selected && <ShieldCheck size={12} className="text-black" />}
       </div>
     </div>
   );
