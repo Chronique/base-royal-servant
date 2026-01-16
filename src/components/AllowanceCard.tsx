@@ -55,7 +55,7 @@ export const AllowanceCard = memo(({ item, selected, onToggle, theme }: {
         </div>
 
         <div className="overflow-hidden">
-          <h4 className={`font-black text-sm truncate max-w-[120px] ${isHighRisk ? 'text-red-500' : theme === 'dark' ? 'text-white' : 'text-[#3E2723]'}`}>
+          <h4 className={`font-black text-sm truncate max-w-[120px] ${isHighRisk ? 'text-red-600' : theme === 'dark' ? 'text-white' : 'text-[#3E2723]'}`}>
             {item.tokenSymbol}
           </h4>
           <p className="text-[8px] opacity-40 uppercase truncate max-w-[130px]">Via: {item.spenderLabel}</p>
