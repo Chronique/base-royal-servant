@@ -20,7 +20,9 @@ import {
   CircleIcon,
   BookmarkFilledIcon,
   EnterIcon,
-  ClockIcon
+  ClockIcon,
+  EyeOpenIcon,
+  TargetIcon
 } from "@radix-ui/react-icons";
 
 // --- INTERFACES ---
@@ -41,17 +43,8 @@ interface SpendPermission {
   status: 'active' | 'expired';
 }
 
-interface FarcasterUser {
-  fid: number;
-  displayName?: string;
-  pfpUrl?: string;
-}
-
-interface ContractCall {
-  to: Address;
-  data: Hex;
-  value: bigint;
-}
+interface FarcasterUser { fid: number; displayName?: string; pfpUrl?: string; }
+interface ContractCall { to: Address; data: Hex; value: bigint; }
 
 export const Demo = ({ userFid }: { userFid?: number }) => {
   const { address, isConnected } = useAccount();
@@ -59,7 +52,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const { sendCallsAsync } = useSendCalls(); 
   const { data: capabilities } = useCapabilities();
 
-  // --- STATE ---
   const [activeTab, setActiveTab] = useState("scanning");
   const [allowances, setAllowances] = useState<AllowanceItem[]>([]);
   const [spendPermissions, setSpendPermissions] = useState<SpendPermission[]>([]);
@@ -71,40 +63,28 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // --- LOGIC: BATCHING SUPPORT ---
   const supportsBatching = useMemo(() => {
     if (!capabilities || !capabilities[8453]) return false;
     return capabilities[8453]?.atomicBatch?.supported === true;
   }, [capabilities]);
 
-  // --- INITIALIZATION ---
   useEffect(() => {
     const init = async () => {
       sdk.actions.ready();
       const context = await sdk.context;
       if (context?.user) setUserProfile(context.user as FarcasterUser); 
-      
       if (!isConnected) {
         const farcaster = connectors.find((c) => c.id === "farcaster");
-        const cbWallet = connectors.find((c) => c.id === "coinbaseWalletSDK");
         if (farcaster) connect({ connector: farcaster });
-        else if (cbWallet) connect({ connector: cbWallet });
       }
     };
     init();
   }, [connectors, isConnected, connect]);
 
-  const handleManualConnect = () => {
-    const browserConnector = connectors.find(c => c.id !== 'farcaster') || connectors[0];
-    if (browserConnector) connect({ connector: browserConnector });
-  };
-
-  // --- DATA LOADING ---
   const loadSecurityData = useCallback(async () => {
     if (!address) return;
     setIsLoading(true);
     try {
-      // 1. Fetch Token Approvals
       const res = await fetch(
         `https://deep-index.moralis.io/api/v2.2/wallets/${address}/approvals?chain=base`,
         { headers: { "X-API-Key": process.env.NEXT_PUBLIC_MORALIS_API_KEY || "" } }
@@ -125,12 +105,10 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       }));
 
       setAllowances(enriched);
-
-      // 2. Mock Spend Permissions (Untuk Tab Patrol)
       const mockPerms: SpendPermission[] = []; 
       setSpendPermissions(mockPerms);
 
-      // 3. Wallet Health Score Logic
+      // Skor 100 jika benar-benar bersih (Tanpa Approval & Tanpa Spend Permission)
       const totalIssues = enriched.length + mockPerms.length;
       if (totalIssues === 0) {
         setWalletScore(100);
@@ -138,13 +116,11 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         const highRisks = enriched.filter(a => a.risk === 'high').length + mockPerms.length;
         setWalletScore(Math.max(100 - (highRisks * 15), 10));
       }
-
     } catch (err) { console.error("Load failed:", err); } finally { setIsLoading(false); }
   }, [address]);
 
   useEffect(() => { if (isConnected) loadSecurityData(); }, [isConnected, loadSecurityData]);
 
-  // --- PAGINATION & HELPERS ---
   const paginatedItems = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return allowances.slice(start, start + itemsPerPage);
@@ -152,14 +128,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
 
   const totalPages = Math.ceil(allowances.length / itemsPerPage);
 
-  const handleShare = () => {
-    sdk.actions.composeCast({
-      text: `🛡️ My wallet security score is ${walletScore}/100! Scan yours with Royal Servant.`,
-      embeds: [window.location.origin]
-    });
-  };
-
-  // --- REVOKE EXECUTION (Sequential vs Batch) ---
   const executeRevoke = async () => {
     if (selectedIds.size === 0) return;
     setIsLoading(true);
@@ -188,7 +156,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
     } catch (e) { console.error("Revoke error:", e); } finally { setIsLoading(false); }
   };
 
-  // --- RENDER: CONNECT SCREEN ---
   if (!isConnected) {
     return (
       <div className={`max-w-xl mx-auto min-h-screen flex flex-col items-center justify-center p-8 transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
@@ -196,25 +163,25 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           <div className="relative w-20 h-20 mx-auto mb-8 bg-[#1A1A1A] border-2 border-[#D4AF37] p-5 rounded-full flex items-center justify-center">
             <StarIcon width={32} height={32} className="text-[#D4AF37]" />
           </div>
+          <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.4em] uppercase italic">Royal Servant Keraton</p>
           <h2 className="text-4xl font-black italic uppercase leading-tight">Scan & Protect Your<br/>Wallet</h2>
-          <button onClick={handleManualConnect} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase flex items-center gap-3 mx-auto shadow-xl">
-            <EnterIcon width={16} /> Connect Wallet
+          <button onClick={() => connect({ connector: connectors[0] })} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase shadow-xl flex items-center gap-2">
+            <EnterIcon /> Masuk Keraton
           </button>
         </div>
       </div>
     );
   }
 
-  // --- RENDER: MAIN APP ---
   return (
     <div className={`max-w-xl mx-auto pb-[calc(12rem+env(safe-area-inset-bottom))] min-h-screen font-sans transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
       
-      {/* STICKY HEADER */}
+      {/* HEADER */}
       <div className={`sticky top-0 z-50 p-4 rounded-b-[1.5rem] shadow-2xl text-center border-b border-[#D4AF37] ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
         <div className="flex justify-between items-center mb-1">
           <p className="text-[8px] font-black text-[#D4AF37] tracking-[0.3em] uppercase italic">Royal Servant</p>
           <div className="flex gap-2">
-            <button onClick={() => loadSecurityData()} disabled={isLoading} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]">
+            <button onClick={() => loadSecurityData()} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]">
               <UpdateIcon className={isLoading ? "animate-spin" : ""} />
             </button>
             <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]">
@@ -228,22 +195,42 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       </div>
 
       <div className="px-4 mt-6">
-        {/* TAB: PATROL (Spend Permissions) */}
+        {/* TAB: GATOTKACA (SCANNING/GUARDS) - HANYA INFORMASI */}
+        {activeTab === "scanning" && (
+          <div className="space-y-2">
+            {paginatedItems.map((item) => (
+              <div key={item.id} className={`p-4 border rounded-[1.5rem] flex justify-between items-center opacity-80 ${theme === 'dark' ? 'bg-[#151515] border-white/5' : 'bg-white border-gray-100'}`}>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-500/10 flex items-center justify-center">
+                    {item.tokenLogo ? <img src={item.tokenLogo} alt="logo" className="w-full h-full object-cover" /> : <CircleIcon className="text-[#D4AF37]" />}
+                  </div>
+                  <div className="overflow-hidden">
+                    <h4 className="font-black text-sm truncate max-w-[120px]">{item.tokenSymbol}</h4>
+                    <p className="text-[8px] opacity-40 uppercase italic">Via: {item.spenderLabel}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                   <p className="text-[10px] font-black">{item.amount}</p>
+                   <p className={`text-[7px] font-bold uppercase ${item.risk === 'high' ? 'text-red-500' : 'text-green-500'}`}>{item.risk} risk</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* TAB: SRIKANDI (PATROL/PERMISSIONS) */}
         {activeTab === "permissions" && (
           <div className="space-y-3">
             {spendPermissions.length === 0 ? (
-              <div className="py-20 text-center opacity-20 italic text-xs uppercase font-black tracking-widest">No Active Patrols</div>
+              <div className="py-20 text-center opacity-20 italic text-xs uppercase font-black tracking-widest">Srikandi: No Threats Found</div>
             ) : (
               spendPermissions.map(perm => (
                 <div key={perm.id} className={`p-4 border rounded-[1.5rem] ${theme === 'dark' ? 'bg-[#151515] border-white/5' : 'bg-white border-gray-100'}`}>
-                  <div className="flex justify-between items-start mb-2">
-                    <p className="font-black text-xs text-[#D4AF37] uppercase italic">Limit: {perm.limit}</p>
-                    <span className="text-[8px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 font-bold uppercase">{perm.status}</span>
-                  </div>
-                  <p className="text-[10px] font-bold mb-1 truncate">Spender: {perm.spender}</p>
-                  <div className="flex items-center gap-2 opacity-40">
+                  <p className="font-black text-xs text-[#D4AF37] uppercase italic mb-1">Limit: {perm.limit}</p>
+                  <p className="text-[10px] font-bold truncate">Spender: {perm.spender}</p>
+                  <div className="flex items-center gap-2 mt-2 opacity-40">
                     <ClockIcon width={10} />
-                    <p className="text-[9px] uppercase font-black text-red-500">Expires: {perm.expiresAt}</p>
+                    <p className="text-[9px] uppercase font-black text-red-500 italic">Expires: {perm.expiresAt}</p>
                   </div>
                 </div>
               ))
@@ -251,8 +238,8 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </div>
         )}
 
-        {/* TAB: GUARDS & PURIFY */}
-        {(activeTab === "scanning" || activeTab === "revoke") && (
+        {/* TAB: ARJUNA (PURIFY/REVOKE) - BISA DIPILIH */}
+        {activeTab === "revoke" && (
           <div className="space-y-2">
              {paginatedItems.map((item) => (
                 <AllowanceCard key={item.id} item={item} selected={selectedIds.has(item.id)} theme={theme} onToggle={(id) => {
@@ -261,17 +248,10 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
                     setSelectedIds(next);
                 }} />
              ))}
-             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-4 mt-8">
-                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37]"><ChevronLeftIcon/></button>
-                <span className="text-[10px] font-black">{currentPage} / {totalPages}</span>
-                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37]"><ChevronRightIcon/></button>
-              </div>
-            )}
           </div>
         )}
 
-        {/* TAB: RANK */}
+        {/* TAB: YUDHISTIRA (RANK) */}
         {activeTab === "score" && (
            <div className={`p-8 rounded-[2rem] border-2 border-dashed border-[#D4AF37]/20 text-center ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
               <div className="relative w-16 h-16 mx-auto mb-4">
@@ -291,29 +271,38 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
                   <div className="bg-[#D4AF37] h-full transition-all duration-1000" style={{ width: `${walletScore}%` }} />
                 </div>
               </div>
-              <button onClick={handleShare} className="mt-8 px-8 py-2.5 bg-[#D4AF37] text-black rounded-full font-black text-[9px] uppercase flex items-center gap-2 mx-auto active:scale-95 transition-all">
-                <Share1Icon width={12} /> Share Health Score
-              </button>
+              <p className="mt-4 text-[9px] font-black italic opacity-40 uppercase tracking-tighter">
+                {walletScore === 100 ? "Yudhistira: Treasury is Pure!" : "Purification Needed, My Liege!"}
+              </p>
            </div>
+        )}
+
+        {/* PAGINATION */}
+        {totalPages > 1 && (activeTab === 'scanning' || activeTab === 'revoke') && (
+          <div className="flex justify-center items-center gap-4 mt-8">
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37]"><ChevronLeftIcon/></button>
+            <span className="text-[10px] font-black">{currentPage} / {totalPages}</span>
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37]"><ChevronRightIcon/></button>
+          </div>
         )}
       </div>
 
-      {/* FLOATING PURIFY BUTTON */}
+      {/* PURIFY BUTTON */}
       {selectedIds.size > 0 && activeTab === "revoke" && (
-        <div className="fixed bottom-[calc(7rem+env(safe-area-inset-bottom))] left-0 right-0 px-10 max-w-[200px] mx-auto z-[101] animate-in slide-in-from-bottom-5">
+        <div className="fixed bottom-[calc(7.2rem+env(safe-area-inset-bottom))] left-0 right-0 px-10 max-w-[200px] mx-auto z-[101]">
           <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-4 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 transition-all uppercase italic">
             {isLoading ? <UpdateIcon className="animate-spin" /> : `Purify ${selectedIds.size}`}
           </button>
         </div>
       )}
 
-      {/* BOTTOM NAVIGATION */}
+      {/* WAYANG NAVIGATION */}
       <div className={`fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[90%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-[100] ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
         {[
-          { id: 'scanning', icon: <MagnifyingGlassIcon width={18}/>, label: 'Guards' },
-          { id: 'permissions', icon: <EnterIcon width={18}/>, label: 'Patrol' },
-          { id: 'revoke', icon: <TrashIcon width={18}/>, label: 'Purify' },
-          { id: 'score', icon: <StarIcon width={18}/>, label: 'Rank' }
+          { id: 'scanning', icon: <EyeOpenIcon width={18}/>, label: 'Gatotkaca' },
+          { id: 'permissions', icon: <TargetIcon width={18}/>, label: 'Srikandi' },
+          { id: 'revoke', icon: <TrashIcon width={18}/>, label: 'Arjuna' },
+          { id: 'score', icon: <StarIcon width={18}/>, label: 'Yudhistira' }
         ].map((tab) => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 py-3 rounded-[1.5rem] flex flex-col items-center transition-all ${activeTab === tab.id ? 'bg-[#D4AF37] text-black shadow-lg scale-105 font-black' : 'text-gray-500 opacity-50'}`}>
             {tab.icon}
