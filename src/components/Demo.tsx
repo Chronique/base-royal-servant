@@ -23,8 +23,7 @@ import {
   TargetIcon,
   QuestionMarkIcon,
   MagnifyingGlassIcon,
-  ExternalLinkIcon,
-  InfoCircledIcon
+  ExternalLinkIcon
 } from "@radix-ui/react-icons";
 
 // --- INTERFACES ---
@@ -60,46 +59,16 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // --- STATE PRODUCT TOUR (ONBORDA STYLE) ---
+  // --- ONBORDA-STYLE TOUR STATE ---
   const [showTour, setShowTour] = useState(false);
   const [tourStep, setTourStep] = useState(0);
 
   const tourData = [
-    { 
-      title: "Royal Header", 
-      tab: "scanning", 
-      desc: "Check your current wallet status and health score here. Use the buttons to Pin, Refresh, or Change Theme.", 
-      position: "top", 
-      icon: <InfoCircledIcon /> 
-    },
-    { 
-      title: "Gatotkaca (Guards)", 
-      tab: "scanning", 
-      desc: "Monitor all active token approvals. Gatotkaca provides insight into who can access your treasury.", 
-      position: "bottom", 
-      icon: <EyeOpenIcon /> 
-    },
-    { 
-      title: "Srikandi (Patrol)", 
-      tab: "permissions", 
-      desc: "Manage Spend Permissions for your Base Account. Control automated limits with Srikandi's agility.", 
-      position: "bottom", 
-      icon: <MagnifyingGlassIcon /> 
-    },
-    { 
-      title: "Arjuna (Purify)", 
-      tab: "revoke", 
-      desc: "Target high-risk permissions. Use Arjuna's precision to revoke access and secure your assets.", 
-      position: "bottom", 
-      icon: <TargetIcon /> 
-    },
-    { 
-      title: "Yudhistira (Rank)", 
-      tab: "score", 
-      desc: "Behold your purity score. Here you can also find other experimental tools from the Royal Chamber.", 
-      position: "bottom", 
-      icon: <StarIcon /> 
-    }
+    { title: "Royal Header", tab: "scanning", desc: "Monitor your wallet health score and manage app settings (Pin, Refresh, Theme) here.", pos: "header", icon: <StarIcon /> },
+    { title: "Gatotkaca", tab: "scanning", desc: "The Guardian. View all active token approvals for your wallet. This view is for observation only.", pos: "nav", icon: <EyeOpenIcon /> },
+    { title: "Srikandi", tab: "permissions", desc: "The Scout. Track and manage automated Spend Permissions on your Base Account.", pos: "nav", icon: <MagnifyingGlassIcon /> },
+    { title: "Arjuna", tab: "revoke", desc: "The Archer. Target high-risk permissions and purify your wallet treasury.", pos: "nav", icon: <TargetIcon /> },
+    { title: "Yudhistira", tab: "score", desc: "The Pure. View your final health score and discover other experimental Royal apps.", pos: "nav", icon: <StarIcon /> }
   ];
 
   const supportsBatching = useMemo(() => {
@@ -110,7 +79,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   // --- FUNCTIONS ---
   const handleShare = useCallback(() => {
     sdk.actions.composeCast({
-      text: `🛡️ My wallet security score is ${walletScore}/100! Scan yours with Royal Servant.`,
+      text: `🛡️ My wallet health score is ${walletScore}/100! Scan yours with Royal Servant.`,
       embeds: [window.location.origin]
     });
   }, [walletScore]);
@@ -118,11 +87,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const handlePinApp = useCallback(async () => {
     try { await sdk.actions.addFrame(); } catch (err) { console.error("Pin failed", err); }
   }, []);
-
-  const handleManualConnect = useCallback(() => {
-    const farcaster = connectors.find((c) => c.id === "farcaster");
-    if (farcaster) connect({ connector: farcaster });
-  }, [connectors, connect]);
 
   const loadSecurityData = useCallback(async () => {
     if (!address) return;
@@ -148,9 +112,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       }));
 
       setAllowances(enriched);
-      setSpendPermissions([]); 
-
-      // --- LOGIKA SKOR (100, 80, 60) ---
+      
       const totalIssues = enriched.length;
       if (totalIssues === 0) setWalletScore(100);
       else if (totalIssues > 10) setWalletScore(60);
@@ -184,7 +146,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       }
       setSelectedIds(new Set());
       setTimeout(() => loadSecurityData(), 4000);
-    } catch (e) { console.error("Revoke error:", e); } finally { setIsLoading(false); }
+    } catch (e) { console.error(e); } finally { setIsLoading(false); }
   };
 
   useEffect(() => {
@@ -200,7 +162,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
     init();
   }, [isConnected, loadSecurityData]);
 
-  // --- TOUR STEP LOGIC ---
   const handleTourNext = () => {
     if (tourStep < tourData.length - 1) {
       const nextStep = tourStep + 1;
@@ -223,14 +184,11 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
     return (
       <div className={`max-w-xl mx-auto min-h-screen flex flex-col items-center justify-center p-8 transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
         <div className="text-center space-y-6">
-          <div className="relative w-20 h-20 mx-auto mb-8 bg-[#1A1A1A] border-2 border-[#D4AF37] p-5 rounded-full flex items-center justify-center shadow-2xl animate-pulse">
+          <div className="relative w-20 h-20 mx-auto mb-8 bg-[#1A1A1A] border-2 border-[#D4AF37] p-5 rounded-full flex items-center justify-center shadow-2xl">
             <StarIcon width={32} height={32} className="text-[#D4AF37]" />
           </div>
-          <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.4em] uppercase italic">Royal Servant Keraton</p>
           <h2 className="text-4xl font-black italic uppercase leading-tight">Protect Your<br/>Wallet</h2>
-          <button onClick={handleManualConnect} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase shadow-xl active:scale-95 transition-all">
-            <EnterIcon /> Connect Wallet
-          </button>
+          <button onClick={() => connect({ connector: connectors[0] })} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase shadow-xl">Masuk Keraton</button>
         </div>
       </div>
     );
@@ -239,46 +197,47 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   return (
     <div className={`max-w-xl mx-auto pb-[calc(14rem+env(safe-area-inset-bottom))] min-h-screen font-sans transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
       
-      {/* TOUR OVERLAY (ONBORDA STYLE) */}
+      {/* ONBORDA-STYLE TOUR OVERLAY */}
       {showTour && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto" onClick={() => setShowTour(false)} />
-          <div className={`relative z-[1001] pointer-events-auto w-[85%] max-w-xs bg-[#151515] p-6 rounded-[2rem] border-2 border-[#D4AF37] shadow-[0_0_50px_rgba(212,175,55,0.3)] transform transition-all animate-in zoom-in-95 ${tourData[tourStep].position === 'top' ? '-translate-y-24' : 'translate-y-20'}`}>
-            <div className="flex items-center gap-3 mb-4">
+        <div className="fixed inset-0 z-[1000] flex flex-col items-center justify-center pointer-events-none">
+          {/* Transparent Backdrop */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] pointer-events-auto" onClick={() => setShowTour(false)} />
+          
+          <div className={`relative z-[1001] pointer-events-auto w-[85%] max-w-xs bg-[#1a1a1a]/95 p-6 rounded-[2rem] border-2 border-[#D4AF37] shadow-[0_0_40px_rgba(212,175,55,0.4)] transform transition-all duration-300 ${tourData[tourStep].pos === 'header' ? '-translate-y-24' : 'translate-y-24'}`}>
+            <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 bg-[#D4AF37] text-black rounded-full flex items-center justify-center text-xl shadow-lg">
                 {tourData[tourStep].icon}
               </div>
-              <h3 className="text-lg font-black italic uppercase text-[#D4AF37] tracking-tighter">{tourData[tourStep].title}</h3>
+              <h3 className="text-lg font-black italic uppercase text-[#D4AF37] tracking-tight">{tourData[tourStep].title}</h3>
             </div>
-            <p className="text-xs font-bold leading-relaxed opacity-90 italic mb-6 text-white">{tourData[tourStep].desc}</p>
+            <p className="text-[10px] font-bold leading-relaxed opacity-90 italic mb-5 text-white">{tourData[tourStep].desc}</p>
             <div className="flex gap-2">
-              <button onClick={() => { setShowTour(false); localStorage.setItem("hasSeenRoyalTour", "true"); }} className="px-4 py-2 text-[8px] font-black uppercase opacity-50 text-white">Skip</button>
+              <button onClick={() => { setShowTour(false); localStorage.setItem("hasSeenRoyalTour", "true"); }} className="px-3 py-2 text-[8px] font-black uppercase opacity-40 text-white">Skip</button>
               <button onClick={handleTourNext} className="flex-1 py-3 bg-[#D4AF37] text-black rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all">
                 {tourStep === tourData.length - 1 ? "Get Started" : "Next Step"}
               </button>
             </div>
             {/* Spotlight Arrow */}
-            <div className={`absolute left-1/2 -translate-x-1/2 w-4 h-4 bg-[#151515] border-l-2 border-t-2 border-[#D4AF37] rotate-45 ${tourData[tourStep].position === 'top' ? 'top-full -translate-y-2' : 'bottom-full translate-y-2 rotate-[225deg]'}`} />
+            <div className={`absolute left-1/2 -translate-x-1/2 w-4 h-4 bg-[#1a1a1a] border-l-2 border-t-2 border-[#D4AF37] rotate-45 ${tourData[tourStep].pos === 'header' ? 'top-full -translate-y-2' : 'bottom-full translate-y-2 rotate-[225deg]'}`} />
           </div>
         </div>
       )}
 
       {/* HEADER */}
-      <div id="tour-header" className={`sticky top-0 z-50 p-4 rounded-b-[1.5rem] shadow-2xl text-center border-b border-[#D4AF37] ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
+      <div className={`sticky top-0 z-50 p-4 rounded-b-[1.5rem] shadow-2xl text-center border-b border-[#D4AF37] ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
         <div className="flex justify-between items-center mb-1">
           <p className="text-[8px] font-black text-[#D4AF37] tracking-[0.3em] uppercase italic">Royal Servant</p>
           <div className="flex gap-2">
-            <button onClick={() => { setTourStep(0); setActiveTab("scanning"); setShowTour(true); }} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] active:scale-90 transition-all"><QuestionMarkIcon width={14}/></button>
-            <button onClick={handlePinApp} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] active:scale-90 transition-all"><BookmarkFilledIcon width={14}/></button>
-            <button onClick={loadSecurityData} disabled={isLoading} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] active:scale-90 transition-all"><UpdateIcon className={isLoading ? "animate-spin" : ""} width={14}/></button>
-            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] active:scale-90 transition-all">{theme === 'dark' ? <SunIcon width={14} /> : <MoonIcon width={14} />}</button>
+            <button onClick={() => { setTourStep(0); setActiveTab("scanning"); setShowTour(true); }} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]"><QuestionMarkIcon width={14}/></button>
+            <button onClick={handlePinApp} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]"><BookmarkFilledIcon width={14}/></button>
+            <button onClick={loadSecurityData} disabled={isLoading} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]"><UpdateIcon className={isLoading ? "animate-spin" : ""} width={14}/></button>
+            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]">{theme === 'dark' ? <SunIcon width={14} /> : <MoonIcon width={14} />}</button>
           </div>
         </div>
         <h1 className="text-4xl font-black italic tracking-tighter leading-none">{activeTab === 'score' ? walletScore : (activeTab === 'permissions' ? spendPermissions.length : allowances.length)}</h1>
       </div>
 
       <div className="px-4 mt-6">
-        {/* TAB GATOTKACA: INFO ONLY */}
         {activeTab === "scanning" && (
           <div className="space-y-2">
             {paginatedItems.map((item) => (
@@ -301,7 +260,10 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </div>
         )}
 
-        {/* TAB ARJUNA: ACTION (SELECTABLE) */}
+        {activeTab === "permissions" && (
+          <div className="py-20 text-center opacity-20 italic text-[10px] font-black uppercase tracking-widest">Srikandi: No Spend Permissions Found</div>
+        )}
+
         {activeTab === "revoke" && (
           <div className="space-y-2">
              {allowances.length > 0 && (
@@ -321,9 +283,8 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </div>
         )}
 
-        {/* TAB YUDHISTIRA: SCORE & OTHER APPS */}
         {activeTab === "score" && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+          <div className="space-y-8">
             <div className={`p-8 rounded-[2rem] border-2 border-dashed border-[#D4AF37]/20 text-center ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
               <div className="relative w-16 h-16 mx-auto mb-4">
                  {userProfile?.pfpUrl ? <img src={userProfile.pfpUrl} alt="pfp" className="w-full h-full rounded-full border-2 border-[#D4AF37]" /> : <div className="w-full h-full rounded-full bg-[#D4AF37]/10 flex items-center justify-center text-[#D4AF37] border-2 border-[#D4AF37]"><StarIcon width={24}/></div>}
@@ -355,9 +316,9 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </div>
         )}
 
-        {/* PAGINATION: Hanya muncul di tab Guards & Purify */}
+        {/* PAGINATION: Fixed Logic */}
         {totalPages > 1 && (activeTab === 'scanning' || activeTab === 'revoke') && (
-          <div className="flex justify-center items-center gap-4 py-8 mb-20">
+          <div className="flex justify-center items-center gap-4 py-8 mb-24 relative z-10">
             <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] disabled:opacity-20 active:scale-90 transition-all"><ChevronLeftIcon/></button>
             <span className="text-[10px] font-black">{currentPage} / {totalPages}</span>
             <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] disabled:opacity-20 active:scale-90 transition-all"><ChevronRightIcon/></button>
@@ -365,7 +326,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         )}
       </div>
 
-      {/* FLOATING PURIFY BUTTON */}
+      {/* PURIFY BUTTON */}
       {selectedIds.size > 0 && activeTab === "revoke" && (
         <div className="fixed bottom-[calc(7.2rem+env(safe-area-inset-bottom))] left-0 right-0 px-10 max-w-[200px] mx-auto z-[101] animate-in slide-in-from-bottom-6">
           <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-4 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 transition-all uppercase italic">
