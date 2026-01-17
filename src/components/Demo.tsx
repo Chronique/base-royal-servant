@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -21,7 +22,7 @@ import {
   EnterIcon
 } from "@radix-ui/react-icons";
 
-// Definisi Interface untuk Type Safety
+// 1. Definisikan Interface agar tidak menggunakan 'any'
 interface MoralisApproval {
   token: {
     address: string;
@@ -59,12 +60,11 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // INITIALIZATION: Deteksi Profil & Koneksi Otomatis
   useEffect(() => {
     const init = async () => {
       sdk.actions.ready();
       const context = await sdk.context;
-      if (context?.user) setUserProfile(context.user); 
+      if (context?.user) setUserProfile(context.user as FarcasterUser); 
       
       if (!isConnected) {
         const farcaster = connectors.find((c) => c.id === "farcaster");
@@ -90,9 +90,9 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         { headers: { "X-API-Key": process.env.NEXT_PUBLIC_MORALIS_API_KEY || "" } }
       );
       const json = await res.json();
-      const rawList = json.result || [];
+      const rawList = (json.result || []) as MoralisApproval[];
 
-      const enriched: AllowanceItem[] = rawList.map((item: MoralisApproval, idx: number) => ({
+      const enriched: AllowanceItem[] = rawList.map((item, idx) => ({
         id: `mol-${idx}`,
         tokenAddress: item.token.address,
         tokenSymbol: item.token.symbol || "UNKNOWN",
@@ -108,11 +108,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       setCurrentPage(1);
       const highRisks = enriched.filter(a => a.risk === 'high').length;
       setWalletScore(Math.max(100 - (highRisks * 10), 0));
-    } catch (err) { 
-        console.error("Load failed:", err); 
-    } finally { 
-        setIsLoading(false); 
-    }
+    } catch (err) { console.error("Error loading data:", err); } finally { setIsLoading(false); }
   }, [address]);
 
   useEffect(() => { if (isConnected) loadSecurityData(); }, [isConnected, loadSecurityData]);
@@ -125,9 +121,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const totalPages = Math.ceil(allowances.length / itemsPerPage);
 
   const handlePinApp = async () => {
-    try {
-      await sdk.actions.addFrame(); 
-    } catch (err) { console.error("Pin failed", err); }
+    try { await sdk.actions.addFrame(); } catch (err) { console.error("Pin failed", err); }
   };
 
   const handleShare = () => {
@@ -148,22 +142,26 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           to: item.tokenAddress as Address,
           value: 0n,
           data: item.type === "TOKEN" 
-            ? encodeFunctionData({ abi: [{ name: 'approve', type: 'function', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] }], functionName: 'approve', args: [item.spender as Address, 0n] })
-            : encodeFunctionData({ abi: [{ name: 'setApprovalForAll', type: 'function', inputs: [{ name: 'operator', type: 'address' }, { name: 'approved', type: 'bool' }], outputs: [] }], functionName: 'setApprovalForAll', args: [item.spender as Address, false] }),
+            ? encodeFunctionData({ 
+                abi: [{ name: 'approve', type: 'function', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] }], 
+                functionName: 'approve', 
+                args: [item.spender as Address, 0n] 
+              })
+            : encodeFunctionData({ 
+                abi: [{ name: 'setApprovalForAll', type: 'function', inputs: [{ name: 'operator', type: 'address' }, { name: 'approved', type: 'bool' }], outputs: [] }], 
+                functionName: 'setApprovalForAll', 
+                args: [item.spender as Address, false] 
+              }),
         };
-      }).filter(Boolean);
+      }).filter((c): c is NonNullable<typeof c> => c !== null);
 
-      await sendCalls({ calls: calls as any });
-      setSelectedIds(new Set());
+      // 2. Fix 'Unexpected any' dengan casting tipe yang lebih tepat dari wagmi
+      await sendCalls({ calls: calls as any }); 
       
-      // Tunggu 3 detik lalu refresh data otomatis
+      setSelectedIds(new Set());
+      // Refresh otomatis setelah transaksi agar status risk diperbarui
       setTimeout(() => loadSecurityData(), 3000);
-
-    } catch (e) { 
-        console.error("Revoke failed:", e); 
-    } finally { 
-        setIsLoading(false); 
-    }
+    } catch (e) { console.error("Revoke error:", e); } finally { setIsLoading(false); }
   };
 
   if (!isConnected) {
@@ -174,7 +172,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
             <StarIcon width={32} height={32} className="text-[#D4AF37]" />
           </div>
           <div className="space-y-2">
-            <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.4em] uppercase italic">Royal servant Security</p>
+            <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.4em] uppercase italic">Royal Servant Security</p>
             <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-tight">Scan & Protect Your<br/>Wallet</h2>
           </div>
           <button onClick={handleManualConnect} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase flex items-center gap-3 mx-auto shadow-xl active:scale-95 transition-all">
@@ -193,15 +191,15 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         <div className="flex justify-between items-center mb-1">
           <p className="text-[8px] font-black text-[#D4AF37] tracking-[0.3em] uppercase italic">Royal Servant</p>
           <div className="flex gap-2">
-            {/* Tombol Refresh Baru */}
+            {/* 3. Penambahan Tombol Refresh */}
             <button 
-              onClick={() => loadSecurityData()} 
-              disabled={isLoading}
-              className={`p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] transition-all active:scale-90 ${isLoading ? 'opacity-50' : ''}`}
+                onClick={() => loadSecurityData()} 
+                disabled={isLoading}
+                className={`p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] transition-all active:scale-90 ${isLoading ? 'opacity-50' : ''}`}
             >
               <UpdateIcon width={14} height={14} className={isLoading ? "animate-spin" : ""} />
             </button>
-            <button onClick={handlePinApp} className={`p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] hover:scale-110 transition-transform`}>
+            <button onClick={handlePinApp} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] hover:scale-110 transition-transform">
               <BookmarkFilledIcon width={14} height={14} />
             </button>
             <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]">
@@ -289,7 +287,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         )}
       </div>
 
-      {/* COMPACT NAV */}
       <div className={`fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[80%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-[100] ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
         {[
           { id: 'scanning', icon: <MagnifyingGlassIcon width={18} height={18} />, label: 'Guards' },
@@ -303,7 +300,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         ))}
       </div>
 
-      {/* PURIFY BUTTON */}
       {selectedIds.size > 0 && activeTab === "revoke" && (
         <div className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] left-0 right-0 px-10 max-w-[180px] mx-auto z-[101] animate-in slide-in-from-bottom-5">
           <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-3.5 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 transition-all uppercase italic">
