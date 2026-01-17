@@ -59,16 +59,16 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // --- ONBORDA-STYLE TOUR STATE ---
+  // --- TOUR STATE ---
   const [showTour, setShowTour] = useState(false);
   const [tourStep, setTourStep] = useState(0);
 
   const tourData = [
-    { title: "Royal Header", tab: "scanning", desc: "Monitor your wallet health score and manage app settings (Pin, Refresh, Theme) here.", pos: "header", icon: <StarIcon /> },
-    { title: "Gatotkaca", tab: "scanning", desc: "The Guardian. View all active token approvals for your wallet. This view is for observation only.", pos: "nav", icon: <EyeOpenIcon /> },
-    { title: "Srikandi", tab: "permissions", desc: "The Scout. Track and manage automated Spend Permissions on your Base Account.", pos: "nav", icon: <MagnifyingGlassIcon /> },
-    { title: "Arjuna", tab: "revoke", desc: "The Archer. Target high-risk permissions and purify your wallet treasury.", pos: "nav", icon: <TargetIcon /> },
-    { title: "Yudhistira", tab: "score", desc: "The Pure. View your final health score and discover other experimental Royal apps.", pos: "nav", icon: <StarIcon /> }
+    { title: "Royal Header", tab: "scanning", desc: "Monitor health and manage settings (Pin, Refresh, Theme) here.", pos: "header", icon: <StarIcon /> },
+    { title: "Gatotkaca", tab: "scanning", desc: "Guardian. View active approvals (Read-only).", pos: "nav", icon: <EyeOpenIcon /> },
+    { title: "Srikandi", tab: "permissions", desc: "Scout. Track automated Spend Permissions.", pos: "nav", icon: <MagnifyingGlassIcon /> },
+    { title: "Arjuna", tab: "revoke", desc: "Archer. Revoke high-risk permissions.", pos: "nav", icon: <TargetIcon /> },
+    { title: "Yudhistira", tab: "score", desc: "Pure. See final score and experimental apps.", pos: "nav", icon: <StarIcon /> }
   ];
 
   const supportsBatching = useMemo(() => {
@@ -87,6 +87,14 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const handlePinApp = useCallback(async () => {
     try { await sdk.actions.addFrame(); } catch (err) { console.error("Pin failed", err); }
   }, []);
+
+  const handleManualConnect = useCallback(() => {
+    // Priority: Farcaster -> Coinbase -> Injected (MetaMask)
+    const fc = connectors.find(c => c.id === 'farcaster');
+    const cb = connectors.find(c => c.id === 'coinbaseWalletSDK');
+    const target = fc || cb || connectors[0];
+    if (target) connect({ connector: target });
+  }, [connectors, connect]);
 
   const loadSecurityData = useCallback(async () => {
     if (!address) return;
@@ -112,13 +120,11 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       }));
 
       setAllowances(enriched);
-      
       const totalIssues = enriched.length;
       if (totalIssues === 0) setWalletScore(100);
       else if (totalIssues > 10) setWalletScore(60);
       else setWalletScore(80);
-
-    } catch (err) { console.error("Load failed:", err); } finally { setIsLoading(false); }
+    } catch (err) { console.error(err); } finally { setIsLoading(false); }
   }, [address]);
 
   const executeRevoke = async () => {
@@ -151,9 +157,12 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
 
   useEffect(() => {
     const init = async () => {
-      sdk.actions.ready();
-      const context = await sdk.context;
-      if (context?.user) setUserProfile(context.user as FarcasterUser); 
+      try {
+        sdk.actions.ready();
+        const context = await sdk.context;
+        if (context?.user) setUserProfile(context.user as FarcasterUser); 
+      } catch (e) { console.log("Standard Browser Detected"); }
+      
       if (isConnected) {
         loadSecurityData();
         if (!localStorage.getItem("hasSeenRoyalTour")) setShowTour(true);
@@ -188,7 +197,9 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
             <StarIcon width={32} height={32} className="text-[#D4AF37]" />
           </div>
           <h2 className="text-4xl font-black italic uppercase leading-tight">Protect Your<br/>Wallet</h2>
-          <button onClick={() => connect({ connector: connectors[0] })} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase shadow-xl">Masuk Keraton</button>
+          <button onClick={handleManualConnect} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase shadow-xl flex items-center gap-2 active:scale-95 transition-all">
+            <EnterIcon /> Enter Wallet
+          </button>
         </div>
       </div>
     );
@@ -197,27 +208,20 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   return (
     <div className={`max-w-xl mx-auto pb-[calc(14rem+env(safe-area-inset-bottom))] min-h-screen font-sans transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
       
-      {/* ONBORDA-STYLE TOUR OVERLAY */}
+      {/* ONBORDA-STYLE TOUR */}
       {showTour && (
         <div className="fixed inset-0 z-[1000] flex flex-col items-center justify-center pointer-events-none">
-          {/* Transparent Backdrop */}
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] pointer-events-auto" onClick={() => setShowTour(false)} />
-          
           <div className={`relative z-[1001] pointer-events-auto w-[85%] max-w-xs bg-[#1a1a1a]/95 p-6 rounded-[2rem] border-2 border-[#D4AF37] shadow-[0_0_40px_rgba(212,175,55,0.4)] transform transition-all duration-300 ${tourData[tourStep].pos === 'header' ? '-translate-y-24' : 'translate-y-24'}`}>
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-[#D4AF37] text-black rounded-full flex items-center justify-center text-xl shadow-lg">
-                {tourData[tourStep].icon}
-              </div>
-              <h3 className="text-lg font-black italic uppercase text-[#D4AF37] tracking-tight">{tourData[tourStep].title}</h3>
+              <div className="w-10 h-10 bg-[#D4AF37] text-black rounded-full flex items-center justify-center text-xl"><StarIcon /></div>
+              <h3 className="text-lg font-black italic uppercase text-[#D4AF37]">{tourData[tourStep].title}</h3>
             </div>
             <p className="text-[10px] font-bold leading-relaxed opacity-90 italic mb-5 text-white">{tourData[tourStep].desc}</p>
             <div className="flex gap-2">
               <button onClick={() => { setShowTour(false); localStorage.setItem("hasSeenRoyalTour", "true"); }} className="px-3 py-2 text-[8px] font-black uppercase opacity-40 text-white">Skip</button>
-              <button onClick={handleTourNext} className="flex-1 py-3 bg-[#D4AF37] text-black rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all">
-                {tourStep === tourData.length - 1 ? "Get Started" : "Next Step"}
-              </button>
+              <button onClick={handleTourNext} className="flex-1 py-3 bg-[#D4AF37] text-black rounded-full text-[10px] font-black uppercase tracking-widest">{tourStep === tourData.length - 1 ? "Finish" : "Next"}</button>
             </div>
-            {/* Spotlight Arrow */}
             <div className={`absolute left-1/2 -translate-x-1/2 w-4 h-4 bg-[#1a1a1a] border-l-2 border-t-2 border-[#D4AF37] rotate-45 ${tourData[tourStep].pos === 'header' ? 'top-full -translate-y-2' : 'bottom-full translate-y-2 rotate-[225deg]'}`} />
           </div>
         </div>
@@ -237,6 +241,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         <h1 className="text-4xl font-black italic tracking-tighter leading-none">{activeTab === 'score' ? walletScore : (activeTab === 'permissions' ? spendPermissions.length : allowances.length)}</h1>
       </div>
 
+      {/* CONTENT AREA */}
       <div className="px-4 mt-6">
         {activeTab === "scanning" && (
           <div className="space-y-2">
@@ -246,29 +251,19 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
                   <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-500/10 flex items-center justify-center">
                     {item.tokenLogo ? <img src={item.tokenLogo} alt="logo" className="w-full h-full object-cover" /> : <CircleIcon className="text-[#D4AF37]" />}
                   </div>
-                  <div className="overflow-hidden text-left">
-                    <h4 className="font-black text-xs truncate max-w-[100px]">{item.tokenSymbol}</h4>
-                    <p className="text-[8px] opacity-40 uppercase italic truncate tracking-tighter">Via: {item.spenderLabel}</p>
-                  </div>
+                  <div className="text-left"><h4 className="font-black text-xs truncate max-w-[100px]">{item.tokenSymbol}</h4><p className="text-[8px] opacity-40 uppercase italic">Via: {item.spenderLabel}</p></div>
                 </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-black">{item.amount}</p>
-                  <p className={`text-[7px] font-bold uppercase ${item.risk === 'high' ? 'text-red-500' : 'text-green-500'}`}>{item.risk} risk</p>
-                </div>
+                <div className="text-right"><p className="text-[10px] font-black">{item.amount}</p><p className={`text-[7px] font-bold uppercase ${item.risk === 'high' ? 'text-red-500' : 'text-green-500'}`}>{item.risk} risk</p></div>
               </div>
             ))}
           </div>
-        )}
-
-        {activeTab === "permissions" && (
-          <div className="py-20 text-center opacity-20 italic text-[10px] font-black uppercase tracking-widest">Srikandi: No Spend Permissions Found</div>
         )}
 
         {activeTab === "revoke" && (
           <div className="space-y-2">
              {allowances.length > 0 && (
                <div className="flex justify-end px-2 mb-2">
-                  <button onClick={() => setSelectedIds(selectedIds.size === allowances.length ? new Set() : new Set(allowances.map(a => a.id)))} className="text-[9px] font-black text-[#D4AF37] uppercase underline italic tracking-tighter active:opacity-50 transition-opacity">
+                  <button onClick={() => setSelectedIds(selectedIds.size === allowances.length ? new Set() : new Set(allowances.map(a => a.id)))} className="text-[9px] font-black text-[#D4AF37] uppercase underline italic tracking-tighter active:opacity-50">
                      {selectedIds.size === allowances.length ? "Deselect All" : "Select All"}
                   </button>
                </div>
@@ -284,20 +279,18 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         )}
 
         {activeTab === "score" && (
-          <div className="space-y-8">
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <div className={`p-8 rounded-[2rem] border-2 border-dashed border-[#D4AF37]/20 text-center ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
               <div className="relative w-16 h-16 mx-auto mb-4">
                  {userProfile?.pfpUrl ? <img src={userProfile.pfpUrl} alt="pfp" className="w-full h-full rounded-full border-2 border-[#D4AF37]" /> : <div className="w-full h-full rounded-full bg-[#D4AF37]/10 flex items-center justify-center text-[#D4AF37] border-2 border-[#D4AF37]"><StarIcon width={24}/></div>}
               </div>
-              <h2 className="text-xl font-black italic uppercase mb-1 tracking-tighter">{userProfile?.displayName || 'Royal User'}</h2>
+              <h2 className="text-xl font-black italic uppercase mb-1">{userProfile?.displayName || 'Royal User'}</h2>
               <div className="flex flex-col gap-2 max-w-[150px] mx-auto mt-6">
-                <div className="flex justify-between text-[10px] font-black italic text-left"><span>HEALTH</span><span className={walletScore === 100 ? "text-green-500" : "text-[#D4AF37]"}>{walletScore}%</span></div>
-                <div className="w-full bg-gray-500/20 h-1.5 rounded-full overflow-hidden text-left"><div className="bg-[#D4AF37] h-full transition-all duration-1000" style={{ width: `${walletScore}%` }} /></div>
+                <div className="flex justify-between text-[10px] font-black italic"><span>HEALTH</span><span className={walletScore === 100 ? "text-green-500" : "text-[#D4AF37]"}>{walletScore}%</span></div>
+                <div className="w-full bg-gray-500/20 h-1.5 rounded-full overflow-hidden"><div className="bg-[#D4AF37] h-full transition-all duration-1000" style={{ width: `${walletScore}%` }} /></div>
               </div>
-              <button onClick={handleShare} className="mt-8 px-8 py-2.5 bg-[#D4AF37] text-black rounded-full font-black text-[9px] uppercase flex items-center gap-2 mx-auto active:scale-95 transition-all shadow-lg"><Share1Icon width={12} /> Share Health</button>
+              <button onClick={handleShare} className="mt-8 px-8 py-2.5 bg-[#D4AF37] text-black rounded-full font-black text-[9px] uppercase flex items-center gap-2 mx-auto active:scale-95 shadow-lg"><Share1Icon width={12} /> Share Health</button>
             </div>
-
-            {/* EXPERIMENTAL APPS */}
             <div className="space-y-4 px-2 text-left">
                 <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.2em] uppercase italic">My experimental miniapps</p>
                 <div className="grid gap-2">
@@ -306,8 +299,8 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
                      { name: "Base Vote", url: "https://base-vote-alpha.vercel.app/", desc: "Onchain polls and community voting" },
                      { name: "Base Dating", url: "https://base-dating.vercel.app/", desc: "Experimental dating onchain" }
                    ].map((app, i) => (
-                     <a key={i} href={app.url} target="_blank" rel="noopener noreferrer" className={`p-4 rounded-[1.2rem] border flex justify-between items-center group transition-all active:scale-[0.98] ${theme === 'dark' ? 'bg-[#111] border-white/5 hover:bg-[#151515]' : 'bg-white border-gray-100 hover:border-[#D4AF37]'}`}>
-                        <div><p className="font-black text-xs uppercase italic tracking-tighter">{app.name}</p><p className="text-[8px] opacity-40 uppercase font-bold tracking-tight">{app.desc}</p></div>
+                     <a key={i} href={app.url} target="_blank" rel="noopener noreferrer" className={`p-4 rounded-[1.2rem] border flex justify-between items-center group transition-all ${theme === 'dark' ? 'bg-[#111] border-white/5 hover:bg-[#151515]' : 'bg-white border-gray-100 hover:border-[#D4AF37]'}`}>
+                        <div><p className="font-black text-xs uppercase italic tracking-tighter">{app.name}</p><p className="text-[8px] opacity-40 uppercase font-bold">{app.desc}</p></div>
                         <ExternalLinkIcon className="opacity-0 group-hover:opacity-100 transition-opacity text-[#D4AF37]" />
                      </a>
                    ))}
@@ -316,26 +309,26 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </div>
         )}
 
-        {/* PAGINATION: Fixed Logic */}
+        {/* PAGINATION */}
         {totalPages > 1 && (activeTab === 'scanning' || activeTab === 'revoke') && (
           <div className="flex justify-center items-center gap-4 py-8 mb-24 relative z-10">
-            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] disabled:opacity-20 active:scale-90 transition-all"><ChevronLeftIcon/></button>
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] disabled:opacity-20"><ChevronLeftIcon/></button>
             <span className="text-[10px] font-black">{currentPage} / {totalPages}</span>
-            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] disabled:opacity-20 active:scale-90 transition-all"><ChevronRightIcon/></button>
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] disabled:opacity-20"><ChevronRightIcon/></button>
           </div>
         )}
       </div>
 
-      {/* PURIFY BUTTON */}
+      {/* REVOKE BUTTON */}
       {selectedIds.size > 0 && activeTab === "revoke" && (
-        <div className="fixed bottom-[calc(7.2rem+env(safe-area-inset-bottom))] left-0 right-0 px-10 max-w-[200px] mx-auto z-[101] animate-in slide-in-from-bottom-6">
-          <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-4 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 transition-all uppercase italic">
+        <div className="fixed bottom-[calc(7.2rem+env(safe-area-inset-bottom))] left-0 right-0 px-10 max-w-[200px] mx-auto z-[101]">
+          <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-4 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 uppercase italic">
             {isLoading ? <UpdateIcon className="animate-spin" /> : `Purify ${selectedIds.size}`}
           </button>
         </div>
       )}
 
-      {/* NAVIGATION (WAYANG) */}
+      {/* NAV BAR */}
       <div className={`fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[90%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-[100] ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
         {[
           { id: 'scanning', icon: <EyeOpenIcon width={18}/>, label: 'Gatotkaca' },
