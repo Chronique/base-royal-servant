@@ -41,8 +41,11 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   // INITIALIZATION: Deteksi Profil & Koneksi Otomatis
   useEffect(() => {
     const init = async () => {
+      // Panggil ready sesegera mungkin agar frame tidak blank/terpotong di Farcaster
+      sdk.actions.ready();
+      
       const context = await sdk.context;
-      if (context?.user) setUserProfile(context.user); // Ambil Nama & Foto asli
+      if (context?.user) setUserProfile(context.user); 
       
       if (!isConnected) {
         const farcaster = connectors.find((c) => c.id === "farcaster");
@@ -50,12 +53,10 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         if (farcaster) connect({ connector: farcaster });
         else if (cbWallet) connect({ connector: cbWallet });
       }
-      sdk.actions.ready();
     };
     init();
   }, [connectors, isConnected, connect]);
 
-  // FIX: Koneksi Manual Browser Biasa (Bukan Farcaster)
   const handleManualConnect = () => {
     const browserConnector = connectors.find(c => c.id !== 'farcaster') || connectors[0];
     if (browserConnector) connect({ connector: browserConnector });
@@ -100,7 +101,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
 
   const totalPages = Math.ceil(allowances.length / itemsPerPage);
 
-  // FIX: Pop-up Pin App (Add to Farcaster)
   const handlePinApp = async () => {
     try {
       await sdk.actions.addFrame(); 
@@ -135,7 +135,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
     } catch (e) { console.error(e); } finally { setIsLoading(false); }
   };
 
-  // LANDING PAGE (Mencegah "Bengong")
   if (!isConnected) {
     return (
       <div className={`max-w-xl mx-auto min-h-screen flex flex-col items-center justify-center p-8 transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
@@ -156,7 +155,8 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   }
 
   return (
-    <div className={`max-w-xl mx-auto pb-44 min-h-screen font-sans transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
+    /* Perbaikan pb-44 menjadi dinamis dengan safe-area */
+    <div className={`max-w-xl mx-auto pb-[calc(12rem+env(safe-area-inset-bottom))] min-h-screen font-sans transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
       
       {/* HEADER */}
       <div className={`sticky top-0 z-50 p-4 rounded-b-[1.5rem] shadow-2xl text-center border-b border-[#D4AF37] ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
@@ -177,7 +177,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       </div>
 
       <div className="px-4 mt-6">
-        {/* VIEW: SCAN & PURIFY */}
         {(activeTab === "scanning" || activeTab === "revoke") && (
           <>
             <div className="space-y-2">
@@ -209,7 +208,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
                ))}
             </div>
 
-            {/* Paginasi hanya muncul di tab Guards/Purify */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-3 mt-8">
                 <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-1.5 rounded-full bg-[#D4AF37]/10 disabled:opacity-10 text-[#D4AF37]">
@@ -224,7 +222,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </>
         )}
 
-        {/* TAB RANK (USER PROFILE) */}
         {activeTab === "score" && (
            <div className={`p-8 rounded-[2rem] border-2 border-dashed border-[#D4AF37]/20 text-center ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
               <div className="relative w-16 h-16 mx-auto mb-4">
@@ -254,8 +251,8 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         )}
       </div>
 
-      {/* COMPACT NAV */}
-      <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[80%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-50 ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
+      {/* COMPACT NAV - Perbaikan posisi bottom dengan safe-area */}
+      <div className={`fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[80%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-[100] ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
         {[
           { id: 'scanning', icon: <MagnifyingGlassIcon width={18} height={18} />, label: 'Guards' },
           { id: 'revoke', icon: <TrashIcon width={18} height={18} />, label: 'Purify' },
@@ -268,9 +265,9 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         ))}
       </div>
 
-      {/* PURIFY BUTTON */}
+      {/* PURIFY BUTTON - Perbaikan posisi bottom agar di atas Nav Bar */}
       {selectedIds.size > 0 && activeTab === "revoke" && (
-        <div className="fixed bottom-22 left-0 right-0 px-10 max-w-[180px] mx-auto z-50 animate-in slide-in-from-bottom-5">
+        <div className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] left-0 right-0 px-10 max-w-[180px] mx-auto z-[101] animate-in slide-in-from-bottom-5">
           <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-3.5 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 transition-all uppercase italic">
             {isLoading ? <UpdateIcon className="animate-spin" /> : `Purify ${selectedIds.size}`}
           </button>
