@@ -179,11 +179,11 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
             <StarIcon width={32} height={32} className="text-[#D4AF37]" />
           </div>
           <div className="space-y-2">
-            <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.4em] uppercase italic">Abdi Dalem Security</p>
-            <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-tight">Protect Your<br/>Base Wallet</h2>
+            <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.4em] uppercase italic">Royal Servant Security</p>
+            <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-tight">Scan & Protect Your<br/>Wallet</h2>
           </div>
           <button onClick={handleManualConnect} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase flex items-center gap-3 mx-auto shadow-xl active:scale-95 transition-all">
-            <EnterIcon width={16} height={16} /> Masuk Keraton
+            <EnterIcon width={16} height={16} /> Enter Keraton
           </button>
         </div>
       </div>
