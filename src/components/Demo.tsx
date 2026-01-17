@@ -9,7 +9,6 @@ import { AllowanceCard, type AllowanceItem } from "./AllowanceCard";
 import { encodeFunctionData, type Address, type Hex } from 'viem';
 import { 
   StarIcon, 
-  TrashIcon, 
   UpdateIcon, 
   Share1Icon, 
   SunIcon, 
@@ -71,9 +70,9 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const [tourStep, setTourStep] = useState(0);
 
   const tourData = [
-    { title: "Gatotkaca (Guards)", tab: "scanning", desc: "Behold Gatotkaca, the guardian. Here you can monitor all active token approvals. This tab is for observation only.", icon: <EyeOpenIcon /> },
-    { title: "Srikandi (Patrol)", tab: "permissions", desc: "Meet Srikandi, the scout. She tracks 'Spend Permissions'—automated limits for specific apps on your Base Account.", icon: <MagnifyingGlassIcon /> },
-    { title: "Arjuna (Purify)", tab: "revoke", desc: "The legendary archer Arjuna. Select high-risk approvals and purify your wallet with a single shot.", icon: <TargetIcon /> },
+    { title: "Gatotkaca (Guards)", tab: "scanning", desc: "Monitor all your active token approvals here. Gatotkaca keeps a watchful eye, but no actions can be taken in this view.", icon: <EyeOpenIcon /> },
+    { title: "Srikandi (Patrol)", tab: "permissions", desc: "Track Spend Permissions on your Base Account. Srikandi scouts for automated limits granted to specific apps.", icon: <MagnifyingGlassIcon /> },
+    { title: "Arjuna (Purify)", tab: "revoke", desc: "Target and clean high-risk permissions from your wallet with a single shot.", icon: <TargetIcon /> },
     { title: "Yudhistira (Rank)", tab: "score", desc: "King Yudhistira reflects your purity. A 100% score means your treasury is completely free from unwanted permissions.", icon: <StarIcon /> }
   ];
 
@@ -85,7 +84,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   // --- FUNCTIONS ---
   const handleShare = useCallback(() => {
     sdk.actions.composeCast({
-      text: `🛡️ My wallet health score is ${walletScore}/100! Scan yours with Royal Servant.`,
+      text: `🛡️ My wallet security score is ${walletScore}/100! Scan yours with Royal Servant.`,
       embeds: [window.location.origin]
     });
   }, [walletScore]);
@@ -95,11 +94,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       await sdk.actions.addFrame(); 
     } catch (err) { console.error("Pin failed", err); }
   }, []);
-
-  const handleManualConnect = useCallback(() => {
-    const farcaster = connectors.find((c) => c.id === "farcaster");
-    if (farcaster) connect({ connector: farcaster });
-  }, [connectors, connect]);
 
   const loadSecurityData = useCallback(async () => {
     if (!address) return;
@@ -127,6 +121,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       setAllowances(enriched);
       setSpendPermissions([]); 
 
+      // --- SCORING LOGIC ---
       const totalIssues = enriched.length;
       if (totalIssues === 0) setWalletScore(100);
       else if (totalIssues > 10) setWalletScore(60);
@@ -176,7 +171,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
     init();
   }, [isConnected, loadSecurityData]);
 
-  // --- TOUR STEP LOGIC ---
   const handleTourNext = () => {
     if (tourStep < 3) {
       const nextStep = tourStep + 1;
@@ -185,14 +179,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
     } else {
       setShowTour(false);
       localStorage.setItem("hasSeenRoyalTour", "true");
-    }
-  };
-
-  const handleTourPrev = () => {
-    if (tourStep > 0) {
-      const prevStep = tourStep - 1;
-      setTourStep(prevStep);
-      setActiveTab(tourData[prevStep].tab);
     }
   };
 
@@ -210,10 +196,9 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           <div className="relative w-20 h-20 mx-auto mb-8 bg-[#1A1A1A] border-2 border-[#D4AF37] p-5 rounded-full flex items-center justify-center shadow-2xl">
             <StarIcon width={32} height={32} className="text-[#D4AF37]" />
           </div>
-          <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.4em] uppercase italic">Royal Servant Keraton</p>
           <h2 className="text-4xl font-black italic uppercase leading-tight">Protect Your<br/>Wallet</h2>
-          <button onClick={handleManualConnect} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase shadow-xl flex items-center gap-2">
-            <EnterIcon /> Connect Wallet
+          <button onClick={() => connect({ connector: connectors[0] })} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase shadow-xl">
+            Masuk Keraton
           </button>
         </div>
       </div>
@@ -235,7 +220,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
               <p className="text-xs font-bold leading-relaxed opacity-70 italic">{tourData[tourStep].desc}</p>
             </div>
             <div className="flex gap-2">
-              {tourStep > 0 && <button onClick={handleTourPrev} className="flex-1 py-3 border border-white/20 rounded-full text-[10px] font-black uppercase">Back</button>}
+              {tourStep > 0 && <button onClick={() => { const s = tourStep - 1; setTourStep(s); setActiveTab(tourData[s].tab); }} className="flex-1 py-3 border border-white/20 rounded-full text-[10px] font-black uppercase">Back</button>}
               <button onClick={handleTourNext} className="flex-1 py-3 bg-[#D4AF37] text-black rounded-full text-[10px] font-black uppercase">
                 {tourStep === 3 ? "Finish" : "Next"}
               </button>
@@ -266,7 +251,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       </div>
 
       <div className="px-4 mt-6">
-        {/* TAB GATOTKACA: INFO ONLY */}
         {activeTab === "scanning" && (
           <div className="space-y-2">
             {paginatedItems.map((item) => (
@@ -275,7 +259,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
                   <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-500/10 flex items-center justify-center">
                     {item.tokenLogo ? <img src={item.tokenLogo} alt="logo" className="w-full h-full object-cover" /> : <CircleIcon className="text-[#D4AF37]" />}
                   </div>
-                  <div className="overflow-hidden">
+                  <div className="overflow-hidden text-left">
                     <h4 className="font-black text-xs truncate max-w-[100px]">{item.tokenSymbol}</h4>
                     <p className="text-[8px] opacity-40 uppercase italic truncate">Via: {item.spenderLabel}</p>
                   </div>
@@ -289,7 +273,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </div>
         )}
 
-        {/* TAB ARJUNA: ACTION (SELECTABLE) */}
         {activeTab === "revoke" && (
           <div className="space-y-2">
              {allowances.length > 0 && (
@@ -309,7 +292,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </div>
         )}
 
-        {/* TAB YUDHISTIRA: SCORE & OTHER APPS */}
         {activeTab === "score" && (
           <div className="space-y-8">
             <div className={`p-8 rounded-[2rem] border-2 border-dashed border-[#D4AF37]/20 text-center ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
@@ -318,13 +300,13 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
               </div>
               <h2 className="text-xl font-black italic uppercase mb-1">{userProfile?.displayName || 'Royal User'}</h2>
               <div className="flex flex-col gap-2 max-w-[150px] mx-auto mt-6">
-                <div className="flex justify-between text-[10px] font-black italic"><span>HEALTH</span><span className={walletScore === 100 ? "text-green-500" : "text-[#D4AF37]"}>{walletScore}%</span></div>
-                <div className="w-full bg-gray-500/20 h-1.5 rounded-full overflow-hidden"><div className="bg-[#D4AF37] h-full transition-all duration-1000" style={{ width: `${walletScore}%` }} /></div>
+                <div className="flex justify-between text-[10px] font-black italic text-left"><span>HEALTH</span><span className={walletScore === 100 ? "text-green-500" : "text-[#D4AF37]"}>{walletScore}%</span></div>
+                <div className="w-full bg-gray-500/20 h-1.5 rounded-full overflow-hidden text-left"><div className="bg-[#D4AF37] h-full transition-all duration-1000" style={{ width: `${walletScore}%` }} /></div>
               </div>
               <button onClick={handleShare} className="mt-8 px-8 py-2.5 bg-[#D4AF37] text-black rounded-full font-black text-[9px] uppercase flex items-center gap-2 mx-auto active:scale-95 transition-all shadow-lg"><Share1Icon width={12} /> Share Health</button>
             </div>
 
-            <div className="space-y-4 px-2">
+            <div className="space-y-4 px-2 text-left">
                 <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.2em] uppercase italic">My experimental miniapps</p>
                 <div className="grid gap-2">
                    {[
@@ -343,7 +325,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         )}
       </div>
 
-      {/* PURIFY BUTTON */}
       {selectedIds.size > 0 && activeTab === "revoke" && (
         <div className="fixed bottom-[calc(7.2rem+env(safe-area-inset-bottom))] left-0 right-0 px-10 max-w-[200px] mx-auto z-[101]">
           <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-4 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 transition-all uppercase italic">
@@ -352,8 +333,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         </div>
       )}
 
-      {/* NAVIGATION (WAYANG) */}
-      <div className={`fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[90%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-[100] ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
+      <div className={`fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[90%] max-sm:w-[95%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-[100] ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
         {[
           { id: 'scanning', icon: <EyeOpenIcon width={18}/>, label: 'Gatotkaca' },
           { id: 'permissions', icon: <MagnifyingGlassIcon width={18}/>, label: 'Srikandi' },
