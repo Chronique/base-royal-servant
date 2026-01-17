@@ -6,7 +6,7 @@ import { sdk } from "@farcaster/miniapp-sdk";
 import { useAccount, useConnect } from "wagmi";
 import { useSendCalls } from 'wagmi/experimental';
 import { AllowanceCard, type AllowanceItem } from "./AllowanceCard"; 
-import { encodeFunctionData, type Address } from 'viem';
+import { encodeFunctionData, type Address, type Hex } from 'viem';
 import { 
   MagnifyingGlassIcon, 
   StarIcon, 
@@ -22,7 +22,7 @@ import {
   EnterIcon
 } from "@radix-ui/react-icons";
 
-// 1. Definisikan Interface untuk menggantikan 'any'
+// 1. Interface untuk menghilangkan penggunaan 'any' secara total
 interface MoralisApproval {
   token: {
     address: string;
@@ -42,6 +42,13 @@ interface FarcasterUser {
   fid: number;
   displayName?: string;
   pfpUrl?: string;
+}
+
+// Interface untuk parameter sendCalls agar tidak menggunakan any
+interface ContractCall {
+  to: Address;
+  data: Hex;
+  value: bigint;
 }
 
 export const Demo = ({ userFid }: { userFid?: number }) => {
@@ -108,7 +115,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       setCurrentPage(1);
       const highRisks = enriched.filter(a => a.risk === 'high').length;
       setWalletScore(Math.max(100 - (highRisks * 10), 0));
-    } catch (err) { console.error(err); } finally { setIsLoading(false); }
+    } catch (err) { console.error("Load error:", err); } finally { setIsLoading(false); }
   }, [address]);
 
   useEffect(() => { if (isConnected) loadSecurityData(); }, [isConnected, loadSecurityData]);
@@ -142,17 +149,26 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           to: item.tokenAddress as Address,
           value: 0n,
           data: item.type === "TOKEN" 
-            ? encodeFunctionData({ abi: [{ name: 'approve', type: 'function', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] }], functionName: 'approve', args: [item.spender as Address, 0n] })
-            : encodeFunctionData({ abi: [{ name: 'setApprovalForAll', type: 'function', inputs: [{ name: 'operator', type: 'address' }, { name: 'approved', type: 'bool' }], outputs: [] }], functionName: 'setApprovalForAll', args: [item.spender as Address, false] }),
+            ? encodeFunctionData({ 
+                abi: [{ name: 'approve', type: 'function', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] }], 
+                functionName: 'approve', 
+                args: [item.spender as Address, 0n] 
+              })
+            : encodeFunctionData({ 
+                abi: [{ name: 'setApprovalForAll', type: 'function', inputs: [{ name: 'operator', type: 'address' }, { name: 'approved', type: 'bool' }], outputs: [] }], 
+                functionName: 'setApprovalForAll', 
+                args: [item.spender as Address, false] 
+              }),
         };
-      }).filter((c): c is NonNullable<typeof c> => c !== null);
+      }).filter((c): c is ContractCall => c !== null);
 
-      // FIX: Menghilangkan error 'any' pada baris 159
-      await sendCalls({ calls: calls as any[] as any }); 
+      // 2. FIX: Menggunakan casting tipe spesifik untuk menghilangkan error 'any'
+      await sendCalls({ calls: calls as unknown as ContractCall[] }); 
       
       setSelectedIds(new Set());
-      setTimeout(() => loadSecurityData(), 3000);
-    } catch (e) { console.error(e); } finally { setIsLoading(false); }
+      // Refresh otomatis agar status 'High Risk' hilang setelah transaksi
+      setTimeout(() => loadSecurityData(), 4000);
+    } catch (e) { console.error("Revoke error:", e); } finally { setIsLoading(false); }
   };
 
   if (!isConnected) {
@@ -182,7 +198,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         <div className="flex justify-between items-center mb-1">
           <p className="text-[8px] font-black text-[#D4AF37] tracking-[0.3em] uppercase italic">Royal Servant</p>
           <div className="flex gap-2">
-            {/* Tombol Refresh */}
+            {/* TOMBOL REFRESH */}
             <button 
                 onClick={() => loadSecurityData()} 
                 disabled={isLoading}
@@ -278,7 +294,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         )}
       </div>
 
-      {/* COMPACT NAV */}
       <div className={`fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[80%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-[100] ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
         {[
           { id: 'scanning', icon: <MagnifyingGlassIcon width={18} height={18} />, label: 'Guards' },
@@ -292,7 +307,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         ))}
       </div>
 
-      {/* PURIFY BUTTON */}
       {selectedIds.size > 0 && activeTab === "revoke" && (
         <div className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] left-0 right-0 px-10 max-w-[180px] mx-auto z-[101] animate-in slide-in-from-bottom-5">
           <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-3.5 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 transition-all uppercase italic">
