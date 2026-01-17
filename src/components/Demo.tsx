@@ -23,7 +23,8 @@ import {
   TargetIcon,
   QuestionMarkIcon,
   MagnifyingGlassIcon,
-  ExternalLinkIcon
+  ExternalLinkIcon,
+  InfoCircledIcon
 } from "@radix-ui/react-icons";
 
 // --- INTERFACES ---
@@ -59,15 +60,46 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // --- STATE PRODUCT TOUR ---
+  // --- STATE PRODUCT TOUR (ONBORDA STYLE) ---
   const [showTour, setShowTour] = useState(false);
   const [tourStep, setTourStep] = useState(0);
 
   const tourData = [
-    { title: "Gatotkaca (Guards)", tab: "scanning", desc: "Monitor all your active token approvals here. Gatotkaca keeps a watchful eye, but no actions can be taken in this view.", icon: <EyeOpenIcon /> },
-    { title: "Srikandi (Patrol)", tab: "permissions", desc: "Track Spend Permissions on your Base Account. Srikandi scouts for automated limits granted to specific apps.", icon: <MagnifyingGlassIcon /> },
-    { title: "Arjuna (Purify)", tab: "revoke", desc: "The legendary archer Arjuna. Select high-risk permissions and purify your wallet with a single shot.", icon: <TargetIcon /> },
-    { title: "Yudhistira (Rank)", tab: "score", desc: "King Yudhistira reflects your purity. A 100% score means your treasury is completely free from unwanted permissions.", icon: <StarIcon /> }
+    { 
+      title: "Royal Header", 
+      tab: "scanning", 
+      desc: "Check your current wallet status and health score here. Use the buttons to Pin, Refresh, or Change Theme.", 
+      position: "top", 
+      icon: <InfoCircledIcon /> 
+    },
+    { 
+      title: "Gatotkaca (Guards)", 
+      tab: "scanning", 
+      desc: "Monitor all active token approvals. Gatotkaca provides insight into who can access your treasury.", 
+      position: "bottom", 
+      icon: <EyeOpenIcon /> 
+    },
+    { 
+      title: "Srikandi (Patrol)", 
+      tab: "permissions", 
+      desc: "Manage Spend Permissions for your Base Account. Control automated limits with Srikandi's agility.", 
+      position: "bottom", 
+      icon: <MagnifyingGlassIcon /> 
+    },
+    { 
+      title: "Arjuna (Purify)", 
+      tab: "revoke", 
+      desc: "Target high-risk permissions. Use Arjuna's precision to revoke access and secure your assets.", 
+      position: "bottom", 
+      icon: <TargetIcon /> 
+    },
+    { 
+      title: "Yudhistira (Rank)", 
+      tab: "score", 
+      desc: "Behold your purity score. Here you can also find other experimental tools from the Royal Chamber.", 
+      position: "bottom", 
+      icon: <StarIcon /> 
+    }
   ];
 
   const supportsBatching = useMemo(() => {
@@ -86,6 +118,11 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const handlePinApp = useCallback(async () => {
     try { await sdk.actions.addFrame(); } catch (err) { console.error("Pin failed", err); }
   }, []);
+
+  const handleManualConnect = useCallback(() => {
+    const farcaster = connectors.find((c) => c.id === "farcaster");
+    if (farcaster) connect({ connector: farcaster });
+  }, [connectors, connect]);
 
   const loadSecurityData = useCallback(async () => {
     if (!address) return;
@@ -113,7 +150,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       setAllowances(enriched);
       setSpendPermissions([]); 
 
-      // --- SCORING LOGIC ---
+      // --- LOGIKA SKOR (100, 80, 60) ---
       const totalIssues = enriched.length;
       if (totalIssues === 0) setWalletScore(100);
       else if (totalIssues > 10) setWalletScore(60);
@@ -147,7 +184,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       }
       setSelectedIds(new Set());
       setTimeout(() => loadSecurityData(), 4000);
-    } catch (e) { console.error(e); } finally { setIsLoading(false); }
+    } catch (e) { console.error("Revoke error:", e); } finally { setIsLoading(false); }
   };
 
   useEffect(() => {
@@ -163,8 +200,9 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
     init();
   }, [isConnected, loadSecurityData]);
 
+  // --- TOUR STEP LOGIC ---
   const handleTourNext = () => {
-    if (tourStep < 3) {
+    if (tourStep < tourData.length - 1) {
       const nextStep = tourStep + 1;
       setTourStep(nextStep);
       setActiveTab(tourData[nextStep].tab);
@@ -185,11 +223,14 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
     return (
       <div className={`max-w-xl mx-auto min-h-screen flex flex-col items-center justify-center p-8 transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
         <div className="text-center space-y-6">
-          <div className="relative w-20 h-20 mx-auto mb-8 bg-[#1A1A1A] border-2 border-[#D4AF37] p-5 rounded-full flex items-center justify-center shadow-2xl">
+          <div className="relative w-20 h-20 mx-auto mb-8 bg-[#1A1A1A] border-2 border-[#D4AF37] p-5 rounded-full flex items-center justify-center shadow-2xl animate-pulse">
             <StarIcon width={32} height={32} className="text-[#D4AF37]" />
           </div>
+          <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.4em] uppercase italic">Royal Servant Keraton</p>
           <h2 className="text-4xl font-black italic uppercase leading-tight">Protect Your<br/>Wallet</h2>
-          <button onClick={() => connect({ connector: connectors[0] })} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase shadow-xl">Masuk Keraton</button>
+          <button onClick={handleManualConnect} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase shadow-xl active:scale-95 transition-all">
+            <EnterIcon /> Connect Wallet
+          </button>
         </div>
       </div>
     );
@@ -198,40 +239,46 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   return (
     <div className={`max-w-xl mx-auto pb-[calc(14rem+env(safe-area-inset-bottom))] min-h-screen font-sans transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
       
-      {/* TOUR OVERLAY */}
+      {/* TOUR OVERLAY (ONBORDA STYLE) */}
       {showTour && (
-        <div className="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 text-white text-center">
-          <div className="max-w-xs space-y-6 bg-[#151515] p-8 rounded-[2rem] border border-[#D4AF37]/50 shadow-2xl">
-            <div className="w-16 h-16 bg-[#D4AF37] text-black rounded-full flex items-center justify-center mx-auto text-3xl shadow-xl animate-bounce">
-              {tourData[tourStep].icon}
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto" onClick={() => setShowTour(false)} />
+          <div className={`relative z-[1001] pointer-events-auto w-[85%] max-w-xs bg-[#151515] p-6 rounded-[2rem] border-2 border-[#D4AF37] shadow-[0_0_50px_rgba(212,175,55,0.3)] transform transition-all animate-in zoom-in-95 ${tourData[tourStep].position === 'top' ? '-translate-y-24' : 'translate-y-20'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#D4AF37] text-black rounded-full flex items-center justify-center text-xl shadow-lg">
+                {tourData[tourStep].icon}
+              </div>
+              <h3 className="text-lg font-black italic uppercase text-[#D4AF37] tracking-tighter">{tourData[tourStep].title}</h3>
             </div>
-            <div className="space-y-2">
-              <h3 className="text-2xl font-black italic uppercase text-[#D4AF37]">{tourData[tourStep].title}</h3>
-              <p className="text-[10px] font-bold leading-relaxed opacity-80 italic">{tourData[tourStep].desc}</p>
-            </div>
+            <p className="text-xs font-bold leading-relaxed opacity-90 italic mb-6 text-white">{tourData[tourStep].desc}</p>
             <div className="flex gap-2">
-              {tourStep > 0 && <button onClick={() => { const s = tourStep - 1; setTourStep(s); setActiveTab(tourData[s].tab); }} className="flex-1 py-3 border border-white/20 rounded-full text-[10px] font-black uppercase">Back</button>}
-              <button onClick={handleTourNext} className="flex-1 py-3 bg-[#D4AF37] text-black rounded-full text-[10px] font-black uppercase">{tourStep === 3 ? "Start" : "Next"}</button>
+              <button onClick={() => { setShowTour(false); localStorage.setItem("hasSeenRoyalTour", "true"); }} className="px-4 py-2 text-[8px] font-black uppercase opacity-50 text-white">Skip</button>
+              <button onClick={handleTourNext} className="flex-1 py-3 bg-[#D4AF37] text-black rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all">
+                {tourStep === tourData.length - 1 ? "Get Started" : "Next Step"}
+              </button>
             </div>
+            {/* Spotlight Arrow */}
+            <div className={`absolute left-1/2 -translate-x-1/2 w-4 h-4 bg-[#151515] border-l-2 border-t-2 border-[#D4AF37] rotate-45 ${tourData[tourStep].position === 'top' ? 'top-full -translate-y-2' : 'bottom-full translate-y-2 rotate-[225deg]'}`} />
           </div>
         </div>
       )}
 
       {/* HEADER */}
-      <div className={`sticky top-0 z-50 p-4 rounded-b-[1.5rem] shadow-2xl text-center border-b border-[#D4AF37] ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
+      <div id="tour-header" className={`sticky top-0 z-50 p-4 rounded-b-[1.5rem] shadow-2xl text-center border-b border-[#D4AF37] ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
         <div className="flex justify-between items-center mb-1">
           <p className="text-[8px] font-black text-[#D4AF37] tracking-[0.3em] uppercase italic">Royal Servant</p>
           <div className="flex gap-2">
-            <button onClick={() => { setTourStep(0); setActiveTab("scanning"); setShowTour(true); }} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]"><QuestionMarkIcon width={14}/></button>
-            <button onClick={handlePinApp} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]"><BookmarkFilledIcon width={14}/></button>
-            <button onClick={loadSecurityData} disabled={isLoading} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]"><UpdateIcon className={isLoading ? "animate-spin" : ""} width={14}/></button>
-            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]">{theme === 'dark' ? <SunIcon width={14} /> : <MoonIcon width={14} />}</button>
+            <button onClick={() => { setTourStep(0); setActiveTab("scanning"); setShowTour(true); }} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] active:scale-90 transition-all"><QuestionMarkIcon width={14}/></button>
+            <button onClick={handlePinApp} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] active:scale-90 transition-all"><BookmarkFilledIcon width={14}/></button>
+            <button onClick={loadSecurityData} disabled={isLoading} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] active:scale-90 transition-all"><UpdateIcon className={isLoading ? "animate-spin" : ""} width={14}/></button>
+            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] active:scale-90 transition-all">{theme === 'dark' ? <SunIcon width={14} /> : <MoonIcon width={14} />}</button>
           </div>
         </div>
         <h1 className="text-4xl font-black italic tracking-tighter leading-none">{activeTab === 'score' ? walletScore : (activeTab === 'permissions' ? spendPermissions.length : allowances.length)}</h1>
       </div>
 
       <div className="px-4 mt-6">
+        {/* TAB GATOTKACA: INFO ONLY */}
         {activeTab === "scanning" && (
           <div className="space-y-2">
             {paginatedItems.map((item) => (
@@ -242,7 +289,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
                   </div>
                   <div className="overflow-hidden text-left">
                     <h4 className="font-black text-xs truncate max-w-[100px]">{item.tokenSymbol}</h4>
-                    <p className="text-[8px] opacity-40 uppercase italic truncate">Via: {item.spenderLabel}</p>
+                    <p className="text-[8px] opacity-40 uppercase italic truncate tracking-tighter">Via: {item.spenderLabel}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -254,11 +301,12 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </div>
         )}
 
+        {/* TAB ARJUNA: ACTION (SELECTABLE) */}
         {activeTab === "revoke" && (
           <div className="space-y-2">
              {allowances.length > 0 && (
                <div className="flex justify-end px-2 mb-2">
-                  <button onClick={() => setSelectedIds(selectedIds.size === allowances.length ? new Set() : new Set(allowances.map(a => a.id)))} className="text-[9px] font-black text-[#D4AF37] uppercase underline italic tracking-tighter">
+                  <button onClick={() => setSelectedIds(selectedIds.size === allowances.length ? new Set() : new Set(allowances.map(a => a.id)))} className="text-[9px] font-black text-[#D4AF37] uppercase underline italic tracking-tighter active:opacity-50 transition-opacity">
                      {selectedIds.size === allowances.length ? "Deselect All" : "Select All"}
                   </button>
                </div>
@@ -273,13 +321,14 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </div>
         )}
 
+        {/* TAB YUDHISTIRA: SCORE & OTHER APPS */}
         {activeTab === "score" && (
-          <div className="space-y-8">
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <div className={`p-8 rounded-[2rem] border-2 border-dashed border-[#D4AF37]/20 text-center ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
               <div className="relative w-16 h-16 mx-auto mb-4">
-                 {userProfile?.pfpUrl ? <img src={userProfile.pfpUrl} alt="pfp" className="w-full h-full rounded-full border-2 border-[#D4AF37]" /> : <div className="w-full h-full rounded-full bg-[#D4AF37]/10 flex items-center justify-center text-[#D4AF37]"><StarIcon width={24}/></div>}
+                 {userProfile?.pfpUrl ? <img src={userProfile.pfpUrl} alt="pfp" className="w-full h-full rounded-full border-2 border-[#D4AF37]" /> : <div className="w-full h-full rounded-full bg-[#D4AF37]/10 flex items-center justify-center text-[#D4AF37] border-2 border-[#D4AF37]"><StarIcon width={24}/></div>}
               </div>
-              <h2 className="text-xl font-black italic uppercase mb-1">{userProfile?.displayName || 'Royal User'}</h2>
+              <h2 className="text-xl font-black italic uppercase mb-1 tracking-tighter">{userProfile?.displayName || 'Royal User'}</h2>
               <div className="flex flex-col gap-2 max-w-[150px] mx-auto mt-6">
                 <div className="flex justify-between text-[10px] font-black italic text-left"><span>HEALTH</span><span className={walletScore === 100 ? "text-green-500" : "text-[#D4AF37]"}>{walletScore}%</span></div>
                 <div className="w-full bg-gray-500/20 h-1.5 rounded-full overflow-hidden text-left"><div className="bg-[#D4AF37] h-full transition-all duration-1000" style={{ width: `${walletScore}%` }} /></div>
@@ -287,16 +336,17 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
               <button onClick={handleShare} className="mt-8 px-8 py-2.5 bg-[#D4AF37] text-black rounded-full font-black text-[9px] uppercase flex items-center gap-2 mx-auto active:scale-95 transition-all shadow-lg"><Share1Icon width={12} /> Share Health</button>
             </div>
 
+            {/* EXPERIMENTAL APPS */}
             <div className="space-y-4 px-2 text-left">
                 <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.2em] uppercase italic">My experimental miniapps</p>
                 <div className="grid gap-2">
                    {[
-                     { name: "TX-Checker", url: "https://tx-xhecker.vercel.app/", desc: "Check your score" },
-                     { name: "Base Vote", url: "https://base-vote-alpha.vercel.app/", desc: "Onchain polls and vote" },
+                     { name: "TX-Checker", url: "https://tx-xhecker.vercel.app/", desc: "Check your transaction score" },
+                     { name: "Base Vote", url: "https://base-vote-alpha.vercel.app/", desc: "Onchain polls and community voting" },
                      { name: "Base Dating", url: "https://base-dating.vercel.app/", desc: "Experimental dating onchain" }
                    ].map((app, i) => (
-                     <a key={i} href={app.url} target="_blank" rel="noopener noreferrer" className={`p-4 rounded-[1.2rem] border flex justify-between items-center group transition-all ${theme === 'dark' ? 'bg-[#111] border-white/5 hover:bg-[#151515]' : 'bg-white border-gray-100 hover:border-[#D4AF37]'}`}>
-                        <div><p className="font-black text-xs uppercase italic tracking-tighter">{app.name}</p><p className="text-[8px] opacity-40 uppercase font-bold">{app.desc}</p></div>
+                     <a key={i} href={app.url} target="_blank" rel="noopener noreferrer" className={`p-4 rounded-[1.2rem] border flex justify-between items-center group transition-all active:scale-[0.98] ${theme === 'dark' ? 'bg-[#111] border-white/5 hover:bg-[#151515]' : 'bg-white border-gray-100 hover:border-[#D4AF37]'}`}>
+                        <div><p className="font-black text-xs uppercase italic tracking-tighter">{app.name}</p><p className="text-[8px] opacity-40 uppercase font-bold tracking-tight">{app.desc}</p></div>
                         <ExternalLinkIcon className="opacity-0 group-hover:opacity-100 transition-opacity text-[#D4AF37]" />
                      </a>
                    ))}
@@ -305,24 +355,26 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </div>
         )}
 
-        {/* PAGINATION - Selalu muncul jika total hlm > 1 */}
+        {/* PAGINATION: Hanya muncul di tab Guards & Purify */}
         {totalPages > 1 && (activeTab === 'scanning' || activeTab === 'revoke') && (
           <div className="flex justify-center items-center gap-4 py-8 mb-20">
-            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] disabled:opacity-20"><ChevronLeftIcon/></button>
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] disabled:opacity-20 active:scale-90 transition-all"><ChevronLeftIcon/></button>
             <span className="text-[10px] font-black">{currentPage} / {totalPages}</span>
-            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] disabled:opacity-20"><ChevronRightIcon/></button>
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] disabled:opacity-20 active:scale-90 transition-all"><ChevronRightIcon/></button>
           </div>
         )}
       </div>
 
+      {/* FLOATING PURIFY BUTTON */}
       {selectedIds.size > 0 && activeTab === "revoke" && (
-        <div className="fixed bottom-[calc(7.2rem+env(safe-area-inset-bottom))] left-0 right-0 px-10 max-w-[200px] mx-auto z-[101]">
+        <div className="fixed bottom-[calc(7.2rem+env(safe-area-inset-bottom))] left-0 right-0 px-10 max-w-[200px] mx-auto z-[101] animate-in slide-in-from-bottom-6">
           <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-4 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 transition-all uppercase italic">
             {isLoading ? <UpdateIcon className="animate-spin" /> : `Purify ${selectedIds.size}`}
           </button>
         </div>
       )}
 
+      {/* NAVIGATION (WAYANG) */}
       <div className={`fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[90%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-[100] ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
         {[
           { id: 'scanning', icon: <EyeOpenIcon width={18}/>, label: 'Gatotkaca' },
@@ -331,7 +383,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           { id: 'score', icon: <StarIcon width={18}/>, label: 'Yudhistira' }
         ].map((tab) => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 py-3 rounded-[1.5rem] flex flex-col items-center transition-all ${activeTab === tab.id ? 'bg-[#D4AF37] text-black shadow-lg scale-105 font-black' : 'text-gray-500 opacity-50'}`}>
-            {tab.icon}<span className="text-[6px] font-black uppercase mt-0.5">{tab.label}</span>
+            {tab.icon}<span className="text-[6px] font-black uppercase mt-0.5 tracking-tighter">{tab.label}</span>
           </button>
         ))}
       </div>
