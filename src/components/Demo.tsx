@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -22,6 +21,28 @@ import {
   EnterIcon
 } from "@radix-ui/react-icons";
 
+// Definisi Interface untuk Type Safety
+interface MoralisApproval {
+  token: {
+    address: string;
+    symbol?: string;
+    logo?: string;
+    contract_type?: string;
+  };
+  spender: {
+    address: string;
+    address_label?: string | null;
+  };
+  value_formatted: string;
+  value: string;
+}
+
+interface FarcasterUser {
+  fid: number;
+  displayName?: string;
+  pfpUrl?: string;
+}
+
 export const Demo = ({ userFid }: { userFid?: number }) => {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
@@ -33,7 +54,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [walletScore, setWalletScore] = useState(100);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<FarcasterUser | null>(null);
   
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -41,9 +62,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   // INITIALIZATION: Deteksi Profil & Koneksi Otomatis
   useEffect(() => {
     const init = async () => {
-      // Panggil ready sesegera mungkin agar frame tidak blank/terpotong di Farcaster
       sdk.actions.ready();
-      
       const context = await sdk.context;
       if (context?.user) setUserProfile(context.user); 
       
@@ -73,7 +92,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       const json = await res.json();
       const rawList = json.result || [];
 
-      const enriched: AllowanceItem[] = rawList.map((item: any, idx: number) => ({
+      const enriched: AllowanceItem[] = rawList.map((item: MoralisApproval, idx: number) => ({
         id: `mol-${idx}`,
         tokenAddress: item.token.address,
         tokenSymbol: item.token.symbol || "UNKNOWN",
@@ -82,14 +101,18 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         spenderLabel: item.spender.address_label || "Contract",
         amount: item.value_formatted === "Unlimited" ? "∞" : item.value_formatted,
         risk: (item.spender.address_label === null || item.value === "unlimited") ? 'high' : 'low',
-        type: ["ERC721", "ERC1155"].includes(item.token.contract_type?.toUpperCase()) ? "NFT" : "TOKEN"
+        type: ["ERC721", "ERC1155"].includes(item.token.contract_type?.toUpperCase() || "") ? "NFT" : "TOKEN"
       }));
 
       setAllowances(enriched);
       setCurrentPage(1);
       const highRisks = enriched.filter(a => a.risk === 'high').length;
       setWalletScore(Math.max(100 - (highRisks * 10), 0));
-    } catch (err) { console.error(err); } finally { setIsLoading(false); }
+    } catch (err) { 
+        console.error("Load failed:", err); 
+    } finally { 
+        setIsLoading(false); 
+    }
   }, [address]);
 
   useEffect(() => { if (isConnected) loadSecurityData(); }, [isConnected, loadSecurityData]);
@@ -132,7 +155,15 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
 
       await sendCalls({ calls: calls as any });
       setSelectedIds(new Set());
-    } catch (e) { console.error(e); } finally { setIsLoading(false); }
+      
+      // Tunggu 3 detik lalu refresh data otomatis
+      setTimeout(() => loadSecurityData(), 3000);
+
+    } catch (e) { 
+        console.error("Revoke failed:", e); 
+    } finally { 
+        setIsLoading(false); 
+    }
   };
 
   if (!isConnected) {
@@ -143,11 +174,11 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
             <StarIcon width={32} height={32} className="text-[#D4AF37]" />
           </div>
           <div className="space-y-2">
-            <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.4em] uppercase italic">Abdi Dalem Security</p>
-            <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-tight">Protect Your<br/>Base Wallet</h2>
+            <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.4em] uppercase italic">Royal servant Security</p>
+            <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-tight">Scan & Protect Your<br/>Wallet</h2>
           </div>
           <button onClick={handleManualConnect} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase flex items-center gap-3 mx-auto shadow-xl active:scale-95 transition-all">
-            <EnterIcon width={16} height={16} /> Masuk Keraton
+            <EnterIcon width={16} height={16} /> Connect Wallet
           </button>
         </div>
       </div>
@@ -155,7 +186,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   }
 
   return (
-    /* Perbaikan pb-44 menjadi dinamis dengan safe-area */
     <div className={`max-w-xl mx-auto pb-[calc(12rem+env(safe-area-inset-bottom))] min-h-screen font-sans transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
       
       {/* HEADER */}
@@ -163,6 +193,14 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         <div className="flex justify-between items-center mb-1">
           <p className="text-[8px] font-black text-[#D4AF37] tracking-[0.3em] uppercase italic">Royal Servant</p>
           <div className="flex gap-2">
+            {/* Tombol Refresh Baru */}
+            <button 
+              onClick={() => loadSecurityData()} 
+              disabled={isLoading}
+              className={`p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] transition-all active:scale-90 ${isLoading ? 'opacity-50' : ''}`}
+            >
+              <UpdateIcon width={14} height={14} className={isLoading ? "animate-spin" : ""} />
+            </button>
             <button onClick={handlePinApp} className={`p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] hover:scale-110 transition-transform`}>
               <BookmarkFilledIcon width={14} height={14} />
             </button>
@@ -231,7 +269,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
                    <div className="w-full h-full rounded-full bg-gray-500/10 flex items-center justify-center text-[#D4AF37] border-2 border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20"><StarIcon width={24} height={24} /></div>
                  )}
               </div>
-              <h2 className="text-xl font-black italic uppercase mb-1">{userProfile?.displayName || 'ABDI DALEM'}</h2>
+              <h2 className="text-xl font-black italic uppercase mb-1">{userProfile?.displayName || 'User'}</h2>
               <p className="text-[9px] opacity-40 uppercase mb-6 italic">FID: {userProfile?.fid || userFid || 'GUEST'}</p>
               
               <div className="flex flex-col gap-2 max-w-[150px] mx-auto">
@@ -251,7 +289,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         )}
       </div>
 
-      {/* COMPACT NAV - Perbaikan posisi bottom dengan safe-area */}
+      {/* COMPACT NAV */}
       <div className={`fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[80%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-[100] ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
         {[
           { id: 'scanning', icon: <MagnifyingGlassIcon width={18} height={18} />, label: 'Guards' },
@@ -265,7 +303,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         ))}
       </div>
 
-      {/* PURIFY BUTTON - Perbaikan posisi bottom agar di atas Nav Bar */}
+      {/* PURIFY BUTTON */}
       {selectedIds.size > 0 && activeTab === "revoke" && (
         <div className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] left-0 right-0 px-10 max-w-[180px] mx-auto z-[101] animate-in slide-in-from-bottom-5">
           <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-3.5 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 transition-all uppercase italic">
