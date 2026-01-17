@@ -11,7 +11,7 @@ export async function GET() {
       version: "1",
       name: METADATA.name,
       // Menambahkan App ID di level frame untuk tracking Farcaster/Base
-      appId: "6966c5b3cf19b2d92b9f7348", 
+      appId: "6967e4a50c770beef04862b3", 
       iconUrl: METADATA.iconImageUrl,
       homeUrl: METADATA.homeUrl,
       imageUrl: METADATA.bannerImageUrl,
