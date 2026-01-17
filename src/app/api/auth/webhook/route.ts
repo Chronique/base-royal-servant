@@ -18,10 +18,8 @@ export async function POST(req: Request) {
     if (fid && notificationDetails) {
       // Simpan/Update token ke tabel notifications
       const { error } = await supabaseAdmin.from('notifications').upsert({
-        fid: fid,
-        token: notificationDetails.token,
-        url: notificationDetails.url,
-        updated_at: new Date().toISOString()
+           fid: fid,
+          updated_at: new Date().toISOString()
       });
 
       if (error) {

@@ -19,7 +19,7 @@ export async function GET() {
       splashBackgroundColor: METADATA.splashBackgroundColor,
       description: METADATA.description,
       ogTitle: METADATA.name,
-      webhookUrl: "https://base-royal-servant.vercel.app/api/auth/webhook",
+      webhookUrl: "https://api.neynar.com/f/app/b154d801-006b-4499-92e4-a00d137c7c6b/event",
       ogDescription: METADATA.description,
       ogImageUrl: METADATA.bannerImageUrl,
       primaryCategory: "developer-tools",
