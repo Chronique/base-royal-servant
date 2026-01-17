@@ -22,7 +22,9 @@ import {
   EnterIcon,
   ClockIcon,
   EyeOpenIcon,
-  TargetIcon
+  TargetIcon,
+  QuestionMarkIcon,
+  Cross1Icon
 } from "@radix-ui/react-icons";
 
 // --- INTERFACES ---
@@ -52,6 +54,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const { sendCallsAsync } = useSendCalls(); 
   const { data: capabilities } = useCapabilities();
 
+  // --- STATE ---
   const [activeTab, setActiveTab] = useState("scanning");
   const [allowances, setAllowances] = useState<AllowanceItem[]>([]);
   const [spendPermissions, setSpendPermissions] = useState<SpendPermission[]>([]);
@@ -63,6 +66,17 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // --- STATE PRODUCT TOUR ---
+  const [showTour, setShowTour] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
+
+  const tourData = [
+    { title: "Gatotkaca (Guards)", desc: "Melihat daftar semua izin (allowance) yang aktif di wallet Anda. Di sini hanya informasi, Anda tidak bisa salah pencet.", icon: <EyeOpenIcon /> },
+    { title: "Srikandi (Patrol)", desc: "Memantau 'Spend Permissions' khusus Base Account. Izin otomatis yang bisa ditarik spender dalam jangka waktu tertentu.", icon: <TargetIcon /> },
+    { title: "Arjuna (Purify)", desc: "Di sinilah Anda beraksi! Pilih izin yang berbahaya lalu bersihkan (revoke) untuk mengamankan aset Anda.", icon: <TrashIcon /> },
+    { title: "Yudhistira (Rank)", desc: "Melihat skor kesucian wallet Anda. Skor 100 berarti wallet Anda benar-benar bersih dari ancaman.", icon: <StarIcon /> }
+  ];
+
   const supportsBatching = useMemo(() => {
     if (!capabilities || !capabilities[8453]) return false;
     return capabilities[8453]?.atomicBatch?.supported === true;
@@ -73,9 +87,16 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       sdk.actions.ready();
       const context = await sdk.context;
       if (context?.user) setUserProfile(context.user as FarcasterUser); 
+      
       if (!isConnected) {
         const farcaster = connectors.find((c) => c.id === "farcaster");
         if (farcaster) connect({ connector: farcaster });
+      }
+
+      // Cek apakah user sudah pernah melihat tour
+      const hasSeenTour = localStorage.getItem("hasSeenRoyalTour");
+      if (!hasSeenTour && isConnected) {
+        setShowTour(true);
       }
     };
     init();
@@ -108,7 +129,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       const mockPerms: SpendPermission[] = []; 
       setSpendPermissions(mockPerms);
 
-      // Skor 100 jika benar-benar bersih (Tanpa Approval & Tanpa Spend Permission)
       const totalIssues = enriched.length + mockPerms.length;
       if (totalIssues === 0) {
         setWalletScore(100);
@@ -156,6 +176,11 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
     } catch (e) { console.error("Revoke error:", e); } finally { setIsLoading(false); }
   };
 
+  const closeTour = () => {
+    setShowTour(false);
+    localStorage.setItem("hasSeenRoyalTour", "true");
+  };
+
   if (!isConnected) {
     return (
       <div className={`max-w-xl mx-auto min-h-screen flex flex-col items-center justify-center p-8 transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
@@ -163,10 +188,9 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           <div className="relative w-20 h-20 mx-auto mb-8 bg-[#1A1A1A] border-2 border-[#D4AF37] p-5 rounded-full flex items-center justify-center">
             <StarIcon width={32} height={32} className="text-[#D4AF37]" />
           </div>
-          <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.4em] uppercase italic">Royal Servant Keraton</p>
           <h2 className="text-4xl font-black italic uppercase leading-tight">Scan & Protect Your<br/>Wallet</h2>
-          <button onClick={() => connect({ connector: connectors[0] })} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase shadow-xl flex items-center gap-2">
-            <EnterIcon /> Masuk Keraton
+          <button onClick={() => connect({ connector: connectors[0] })} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase shadow-xl">
+            Masuk Keraton
           </button>
         </div>
       </div>
@@ -176,16 +200,40 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   return (
     <div className={`max-w-xl mx-auto pb-[calc(12rem+env(safe-area-inset-bottom))] min-h-screen font-sans transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
       
+      {/* PRODUCT TOUR OVERLAY */}
+      {showTour && (
+        <div className="fixed inset-0 z-[1000] bg-black/90 backdrop-blur-sm flex items-center justify-center p-6 text-white text-center">
+          <div className="max-w-xs space-y-6 animate-in zoom-in-95 duration-300">
+            <div className="w-16 h-16 bg-[#D4AF37] text-black rounded-full flex items-center justify-center mx-auto text-3xl shadow-2xl">
+              {tourData[tourStep].icon}
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black italic uppercase text-[#D4AF37]">{tourData[tourStep].title}</h3>
+              <p className="text-xs font-bold leading-relaxed opacity-80">{tourData[tourStep].desc}</p>
+            </div>
+            <div className="flex gap-2">
+              {tourStep > 0 && (
+                <button onClick={() => setTourStep(s => s - 1)} className="flex-1 py-3 border border-white/20 rounded-full text-[10px] font-black uppercase tracking-widest">Kembali</button>
+              )}
+              <button onClick={() => tourStep < 3 ? setTourStep(s => s + 1) : closeTour()} className="flex-1 py-3 bg-[#D4AF37] text-black rounded-full text-[10px] font-black uppercase tracking-widest">
+                {tourStep === 3 ? "Mulai Patroli" : "Lanjut"}
+              </button>
+            </div>
+            <button onClick={closeTour} className="text-[10px] uppercase font-black opacity-30">Lewati Tour</button>
+          </div>
+        </div>
+      )}
+
       {/* HEADER */}
       <div className={`sticky top-0 z-50 p-4 rounded-b-[1.5rem] shadow-2xl text-center border-b border-[#D4AF37] ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
         <div className="flex justify-between items-center mb-1">
           <p className="text-[8px] font-black text-[#D4AF37] tracking-[0.3em] uppercase italic">Royal Servant</p>
           <div className="flex gap-2">
-            <button onClick={() => loadSecurityData()} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]">
-              <UpdateIcon className={isLoading ? "animate-spin" : ""} />
+            <button onClick={() => setShowTour(true)} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]">
+              <QuestionMarkIcon width={14} height={14} />
             </button>
-            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]">
-              {theme === 'dark' ? <SunIcon width={14} /> : <MoonIcon width={14} />}
+            <button onClick={() => loadSecurityData()} disabled={isLoading} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]">
+              <UpdateIcon className={isLoading ? "animate-spin" : ""} />
             </button>
           </div>
         </div>
@@ -195,7 +243,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       </div>
 
       <div className="px-4 mt-6">
-        {/* TAB: GATOTKACA (SCANNING/GUARDS) - HANYA INFORMASI */}
+        {/* TAB: GATOTKACA (INFO ONLY) */}
         {activeTab === "scanning" && (
           <div className="space-y-2">
             {paginatedItems.map((item) => (
@@ -204,8 +252,8 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
                   <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-500/10 flex items-center justify-center">
                     {item.tokenLogo ? <img src={item.tokenLogo} alt="logo" className="w-full h-full object-cover" /> : <CircleIcon className="text-[#D4AF37]" />}
                   </div>
-                  <div className="overflow-hidden">
-                    <h4 className="font-black text-sm truncate max-w-[120px]">{item.tokenSymbol}</h4>
+                  <div>
+                    <h4 className="font-black text-sm">{item.tokenSymbol}</h4>
                     <p className="text-[8px] opacity-40 uppercase italic">Via: {item.spenderLabel}</p>
                   </div>
                 </div>
@@ -218,19 +266,18 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </div>
         )}
 
-        {/* TAB: SRIKANDI (PATROL/PERMISSIONS) */}
+        {/* TAB: SRIKANDI (PATROL) */}
         {activeTab === "permissions" && (
           <div className="space-y-3">
             {spendPermissions.length === 0 ? (
-              <div className="py-20 text-center opacity-20 italic text-xs uppercase font-black tracking-widest">Srikandi: No Threats Found</div>
+              <div className="py-20 text-center opacity-20 italic text-xs uppercase font-black tracking-widest">Srikandi: Tidak Ada Ancaman</div>
             ) : (
               spendPermissions.map(perm => (
                 <div key={perm.id} className={`p-4 border rounded-[1.5rem] ${theme === 'dark' ? 'bg-[#151515] border-white/5' : 'bg-white border-gray-100'}`}>
                   <p className="font-black text-xs text-[#D4AF37] uppercase italic mb-1">Limit: {perm.limit}</p>
                   <p className="text-[10px] font-bold truncate">Spender: {perm.spender}</p>
-                  <div className="flex items-center gap-2 mt-2 opacity-40">
-                    <ClockIcon width={10} />
-                    <p className="text-[9px] uppercase font-black text-red-500 italic">Expires: {perm.expiresAt}</p>
+                  <div className="flex items-center gap-2 mt-2 opacity-40 text-red-500">
+                    <ClockIcon width={10} /><p className="text-[9px] uppercase font-black italic">Expires: {perm.expiresAt}</p>
                   </div>
                 </div>
               ))
@@ -238,7 +285,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </div>
         )}
 
-        {/* TAB: ARJUNA (PURIFY/REVOKE) - BISA DIPILIH */}
+        {/* TAB: ARJUNA (ACTION) */}
         {activeTab === "revoke" && (
           <div className="space-y-2">
              {paginatedItems.map((item) => (
@@ -251,7 +298,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </div>
         )}
 
-        {/* TAB: YUDHISTIRA (RANK) */}
+        {/* TAB: YUDHISTIRA (SCORE) */}
         {activeTab === "score" && (
            <div className={`p-8 rounded-[2rem] border-2 border-dashed border-[#D4AF37]/20 text-center ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
               <div className="relative w-16 h-16 mx-auto mb-4">
@@ -264,15 +311,15 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
               <h2 className="text-xl font-black italic uppercase mb-1">{userProfile?.displayName || 'Royal User'}</h2>
               <div className="flex flex-col gap-2 max-w-[150px] mx-auto mt-6">
                 <div className="flex justify-between text-[10px] font-black italic">
-                  <span>WALLET HEALTH</span>
+                  <span>HEALTH SCORE</span>
                   <span className={walletScore === 100 ? "text-green-500" : "text-[#D4AF37]"}>{walletScore}%</span>
                 </div>
                 <div className="w-full bg-gray-500/20 h-1.5 rounded-full overflow-hidden">
                   <div className="bg-[#D4AF37] h-full transition-all duration-1000" style={{ width: `${walletScore}%` }} />
                 </div>
               </div>
-              <p className="mt-4 text-[9px] font-black italic opacity-40 uppercase tracking-tighter">
-                {walletScore === 100 ? "Yudhistira: Treasury is Pure!" : "Purification Needed, My Liege!"}
+              <p className="mt-4 text-[9px] font-black italic opacity-40 uppercase">
+                {walletScore === 100 ? "Yudhistira: Kemurnian Terjaga!" : "Butuh Pembersihan!"}
               </p>
            </div>
         )}
@@ -287,7 +334,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         )}
       </div>
 
-      {/* PURIFY BUTTON */}
+      {/* FLOATING PURIFY BUTTON */}
       {selectedIds.size > 0 && activeTab === "revoke" && (
         <div className="fixed bottom-[calc(7.2rem+env(safe-area-inset-bottom))] left-0 right-0 px-10 max-w-[200px] mx-auto z-[101]">
           <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-4 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 transition-all uppercase italic">
@@ -296,7 +343,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         </div>
       )}
 
-      {/* WAYANG NAVIGATION */}
+      {/* BOTTOM NAVIGATION */}
       <div className={`fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[90%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-[100] ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
         {[
           { id: 'scanning', icon: <EyeOpenIcon width={18}/>, label: 'Gatotkaca' },
