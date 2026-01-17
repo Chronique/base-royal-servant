@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   },
   // --- TAMBAHKAN BAGIAN INI UNTUK VERIFIKASI BASE ---
   other: {
-    'base:app_id': '6966c5b3cf19b2d92b9f7348',
+    'base:app_id': '6967e4a50c770beef04862b3',
   },
 };
 
