@@ -35,13 +35,7 @@ interface MoralisApproval {
 }
 
 interface SpendPermission {
-  id: string;
-  spender: string;
-  token: string;
-  limit: string;
-  period: string;
-  expiresAt: string;
-  status: 'active' | 'expired';
+  id: string; spender: string; token: string; limit: string; period: string; expiresAt: string; status: 'active' | 'expired';
 }
 
 interface FarcasterUser { fid: number; displayName?: string; pfpUrl?: string; }
@@ -72,7 +66,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const tourData = [
     { title: "Gatotkaca (Guards)", tab: "scanning", desc: "Monitor all your active token approvals here. Gatotkaca keeps a watchful eye, but no actions can be taken in this view.", icon: <EyeOpenIcon /> },
     { title: "Srikandi (Patrol)", tab: "permissions", desc: "Track Spend Permissions on your Base Account. Srikandi scouts for automated limits granted to specific apps.", icon: <MagnifyingGlassIcon /> },
-    { title: "Arjuna (Purify)", tab: "revoke", desc: "Target and clean high-risk permissions from your wallet with a single shot.", icon: <TargetIcon /> },
+    { title: "Arjuna (Purify)", tab: "revoke", desc: "The legendary archer Arjuna. Select high-risk permissions and purify your wallet with a single shot.", icon: <TargetIcon /> },
     { title: "Yudhistira (Rank)", tab: "score", desc: "King Yudhistira reflects your purity. A 100% score means your treasury is completely free from unwanted permissions.", icon: <StarIcon /> }
   ];
 
@@ -90,9 +84,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   }, [walletScore]);
 
   const handlePinApp = useCallback(async () => {
-    try {
-      await sdk.actions.addFrame(); 
-    } catch (err) { console.error("Pin failed", err); }
+    try { await sdk.actions.addFrame(); } catch (err) { console.error("Pin failed", err); }
   }, []);
 
   const loadSecurityData = useCallback(async () => {
@@ -197,35 +189,30 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
             <StarIcon width={32} height={32} className="text-[#D4AF37]" />
           </div>
           <h2 className="text-4xl font-black italic uppercase leading-tight">Protect Your<br/>Wallet</h2>
-          <button onClick={() => connect({ connector: connectors[0] })} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase shadow-xl">
-            Masuk Keraton
-          </button>
+          <button onClick={() => connect({ connector: connectors[0] })} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase shadow-xl">Masuk Keraton</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`max-w-xl mx-auto pb-[calc(12rem+env(safe-area-inset-bottom))] min-h-screen font-sans transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
+    <div className={`max-w-xl mx-auto pb-[calc(14rem+env(safe-area-inset-bottom))] min-h-screen font-sans transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
       
       {/* TOUR OVERLAY */}
       {showTour && (
-        <div className="fixed inset-0 z-[1000] bg-black/95 backdrop-blur-md flex items-center justify-center p-6 text-white text-center">
-          <div className="max-w-xs space-y-6">
-            <div className="w-16 h-16 bg-[#D4AF37] text-black rounded-full flex items-center justify-center mx-auto text-3xl shadow-2xl animate-bounce">
+        <div className="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 text-white text-center">
+          <div className="max-w-xs space-y-6 bg-[#151515] p-8 rounded-[2rem] border border-[#D4AF37]/50 shadow-2xl">
+            <div className="w-16 h-16 bg-[#D4AF37] text-black rounded-full flex items-center justify-center mx-auto text-3xl shadow-xl animate-bounce">
               {tourData[tourStep].icon}
             </div>
             <div className="space-y-2">
               <h3 className="text-2xl font-black italic uppercase text-[#D4AF37]">{tourData[tourStep].title}</h3>
-              <p className="text-xs font-bold leading-relaxed opacity-70 italic">{tourData[tourStep].desc}</p>
+              <p className="text-[10px] font-bold leading-relaxed opacity-80 italic">{tourData[tourStep].desc}</p>
             </div>
             <div className="flex gap-2">
               {tourStep > 0 && <button onClick={() => { const s = tourStep - 1; setTourStep(s); setActiveTab(tourData[s].tab); }} className="flex-1 py-3 border border-white/20 rounded-full text-[10px] font-black uppercase">Back</button>}
-              <button onClick={handleTourNext} className="flex-1 py-3 bg-[#D4AF37] text-black rounded-full text-[10px] font-black uppercase">
-                {tourStep === 3 ? "Finish" : "Next"}
-              </button>
+              <button onClick={handleTourNext} className="flex-1 py-3 bg-[#D4AF37] text-black rounded-full text-[10px] font-black uppercase">{tourStep === 3 ? "Start" : "Next"}</button>
             </div>
-            <button onClick={() => { setShowTour(false); localStorage.setItem("hasSeenRoyalTour", "true"); }} className="text-[9px] uppercase font-black opacity-30 tracking-widest">Skip Tour</button>
           </div>
         </div>
       )}
@@ -235,19 +222,13 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         <div className="flex justify-between items-center mb-1">
           <p className="text-[8px] font-black text-[#D4AF37] tracking-[0.3em] uppercase italic">Royal Servant</p>
           <div className="flex gap-2">
-            <button onClick={() => { setTourStep(0); setActiveTab("scanning"); setShowTour(true); }} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]"><QuestionMarkIcon/></button>
-            <button onClick={handlePinApp} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]"><BookmarkFilledIcon/></button>
-            <button onClick={loadSecurityData} disabled={isLoading} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]">
-              <UpdateIcon className={isLoading ? "animate-spin" : ""} />
-            </button>
-            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]">
-              {theme === 'dark' ? <SunIcon width={14} /> : <MoonIcon width={14} />}
-            </button>
+            <button onClick={() => { setTourStep(0); setActiveTab("scanning"); setShowTour(true); }} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]"><QuestionMarkIcon width={14}/></button>
+            <button onClick={handlePinApp} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]"><BookmarkFilledIcon width={14}/></button>
+            <button onClick={loadSecurityData} disabled={isLoading} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]"><UpdateIcon className={isLoading ? "animate-spin" : ""} width={14}/></button>
+            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]">{theme === 'dark' ? <SunIcon width={14} /> : <MoonIcon width={14} />}</button>
           </div>
         </div>
-        <h1 className="text-4xl font-black italic tracking-tighter leading-none">
-          {activeTab === 'score' ? walletScore : (activeTab === 'permissions' ? spendPermissions.length : allowances.length)}
-        </h1>
+        <h1 className="text-4xl font-black italic tracking-tighter leading-none">{activeTab === 'score' ? walletScore : (activeTab === 'permissions' ? spendPermissions.length : allowances.length)}</h1>
       </div>
 
       <div className="px-4 mt-6">
@@ -277,7 +258,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           <div className="space-y-2">
              {allowances.length > 0 && (
                <div className="flex justify-end px-2 mb-2">
-                  <button onClick={() => setSelectedIds(selectedIds.size === allowances.length ? new Set() : new Set(allowances.map(a => a.id)))} className="text-[9px] font-black text-[#D4AF37] uppercase underline italic">
+                  <button onClick={() => setSelectedIds(selectedIds.size === allowances.length ? new Set() : new Set(allowances.map(a => a.id)))} className="text-[9px] font-black text-[#D4AF37] uppercase underline italic tracking-tighter">
                      {selectedIds.size === allowances.length ? "Deselect All" : "Select All"}
                   </button>
                </div>
@@ -323,6 +304,15 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
             </div>
           </div>
         )}
+
+        {/* PAGINATION - Selalu muncul jika total hlm > 1 */}
+        {totalPages > 1 && (activeTab === 'scanning' || activeTab === 'revoke') && (
+          <div className="flex justify-center items-center gap-4 py-8 mb-20">
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] disabled:opacity-20"><ChevronLeftIcon/></button>
+            <span className="text-[10px] font-black">{currentPage} / {totalPages}</span>
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] disabled:opacity-20"><ChevronRightIcon/></button>
+          </div>
+        )}
       </div>
 
       {selectedIds.size > 0 && activeTab === "revoke" && (
@@ -333,7 +323,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         </div>
       )}
 
-      <div className={`fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[90%] max-sm:w-[95%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-[100] ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
+      <div className={`fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[90%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-[100] ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
         {[
           { id: 'scanning', icon: <EyeOpenIcon width={18}/>, label: 'Gatotkaca' },
           { id: 'permissions', icon: <MagnifyingGlassIcon width={18}/>, label: 'Srikandi' },
