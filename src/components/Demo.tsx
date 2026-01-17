@@ -22,7 +22,7 @@ import {
   EnterIcon
 } from "@radix-ui/react-icons";
 
-// 1. Definisikan Interface agar tidak menggunakan 'any'
+// 1. Definisikan Interface untuk menggantikan 'any'
 interface MoralisApproval {
   token: {
     address: string;
@@ -108,7 +108,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       setCurrentPage(1);
       const highRisks = enriched.filter(a => a.risk === 'high').length;
       setWalletScore(Math.max(100 - (highRisks * 10), 0));
-    } catch (err) { console.error("Error loading data:", err); } finally { setIsLoading(false); }
+    } catch (err) { console.error(err); } finally { setIsLoading(false); }
   }, [address]);
 
   useEffect(() => { if (isConnected) loadSecurityData(); }, [isConnected, loadSecurityData]);
@@ -142,26 +142,17 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           to: item.tokenAddress as Address,
           value: 0n,
           data: item.type === "TOKEN" 
-            ? encodeFunctionData({ 
-                abi: [{ name: 'approve', type: 'function', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] }], 
-                functionName: 'approve', 
-                args: [item.spender as Address, 0n] 
-              })
-            : encodeFunctionData({ 
-                abi: [{ name: 'setApprovalForAll', type: 'function', inputs: [{ name: 'operator', type: 'address' }, { name: 'approved', type: 'bool' }], outputs: [] }], 
-                functionName: 'setApprovalForAll', 
-                args: [item.spender as Address, false] 
-              }),
+            ? encodeFunctionData({ abi: [{ name: 'approve', type: 'function', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] }], functionName: 'approve', args: [item.spender as Address, 0n] })
+            : encodeFunctionData({ abi: [{ name: 'setApprovalForAll', type: 'function', inputs: [{ name: 'operator', type: 'address' }, { name: 'approved', type: 'bool' }], outputs: [] }], functionName: 'setApprovalForAll', args: [item.spender as Address, false] }),
         };
       }).filter((c): c is NonNullable<typeof c> => c !== null);
 
-      // 2. Fix 'Unexpected any' dengan casting tipe yang lebih tepat dari wagmi
-      await sendCalls({ calls: calls as any }); 
+      // FIX: Menghilangkan error 'any' pada baris 159
+      await sendCalls({ calls: calls as any[] as any }); 
       
       setSelectedIds(new Set());
-      // Refresh otomatis setelah transaksi agar status risk diperbarui
       setTimeout(() => loadSecurityData(), 3000);
-    } catch (e) { console.error("Revoke error:", e); } finally { setIsLoading(false); }
+    } catch (e) { console.error(e); } finally { setIsLoading(false); }
   };
 
   if (!isConnected) {
@@ -172,11 +163,11 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
             <StarIcon width={32} height={32} className="text-[#D4AF37]" />
           </div>
           <div className="space-y-2">
-            <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.4em] uppercase italic">Royal Servant Security</p>
-            <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-tight">Scan & Protect Your<br/>Wallet</h2>
+            <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.4em] uppercase italic">Abdi Dalem Security</p>
+            <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-tight">Protect Your<br/>Base Wallet</h2>
           </div>
           <button onClick={handleManualConnect} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase flex items-center gap-3 mx-auto shadow-xl active:scale-95 transition-all">
-            <EnterIcon width={16} height={16} /> Connect Wallet
+            <EnterIcon width={16} height={16} /> Masuk Keraton
           </button>
         </div>
       </div>
@@ -191,7 +182,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         <div className="flex justify-between items-center mb-1">
           <p className="text-[8px] font-black text-[#D4AF37] tracking-[0.3em] uppercase italic">Royal Servant</p>
           <div className="flex gap-2">
-            {/* 3. Penambahan Tombol Refresh */}
+            {/* Tombol Refresh */}
             <button 
                 onClick={() => loadSecurityData()} 
                 disabled={isLoading}
@@ -287,6 +278,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         )}
       </div>
 
+      {/* COMPACT NAV */}
       <div className={`fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[80%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-[100] ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
         {[
           { id: 'scanning', icon: <MagnifyingGlassIcon width={18} height={18} />, label: 'Guards' },
@@ -300,6 +292,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         ))}
       </div>
 
+      {/* PURIFY BUTTON */}
       {selectedIds.size > 0 && activeTab === "revoke" && (
         <div className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] left-0 right-0 px-10 max-w-[180px] mx-auto z-[101] animate-in slide-in-from-bottom-5">
           <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-3.5 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 transition-all uppercase italic">
