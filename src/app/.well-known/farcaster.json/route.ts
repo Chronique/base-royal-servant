@@ -46,7 +46,7 @@ export async function GET() {
       "tags": ["base", "baseapp", "miniapp", "tools"]
     },
     baseBuilder: {
-      "builder": "bc_wqi7gszy", // Menambahkan ID di sini untuk integrasi Base Builder
+      "builder": "bc_tvapjj4p", // Menambahkan ID di sini untuk integrasi Base Builder
       "allowedAddresses": ["0x4fba95e4772be6d37a0c931D00570Fe2c9675524"],
     }
   };
