@@ -5,8 +5,8 @@ export const METADATA = {
   name: "Royal Servant",
   description: "Cleaning up your Base wallet by revoking unnecessary token allowances.",
   
-  bannerImageUrl: 'https://i.imgur.com/2bsV8mV.png',
-  iconImageUrl: 'https://i.imgur.com/brcnijg.png',
+  bannerImageUrl: 'https://base-royal-servant.vercel.app/banner.png',
+  iconImageUrl: 'https://base-royal-servant.vercel.app/icon.png',
   homeUrl: process.env.NEXT_PUBLIC_URL ?? "https://base-royal-servant.vercel.app",
   splashBackgroundColor: "#FFFFFF"
   
