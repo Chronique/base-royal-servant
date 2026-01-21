@@ -23,7 +23,7 @@ import { createBaseAccountSDK } from "@base-org/account";
 import { METADATA } from "~/lib/utils";
 import { SiweMessage } from "siwe";
 
-const RECIPIENT_ADDRESS = "0x8342A48694A74044116F330db5050a267b28dD85";
+const RECIPIENT_ADDRESS = "0x4fba95e4772be6d37a0c931D00570Fe2c9675524";
 
 const baseAccountSDK = createBaseAccountSDK({
   appName: METADATA.name,

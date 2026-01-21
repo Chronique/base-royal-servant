@@ -8,7 +8,7 @@ export const METADATA = {
   bannerImageUrl: 'https://base-royal-servant.vercel.app/banner.png',
   iconImageUrl: 'https://base-royal-servant.vercel.app/icon.png',
   homeUrl: process.env.NEXT_PUBLIC_URL ?? 'https://base-royal-servant.vercel.app/icon.png',
-  splashBackgroundColor: "#61615b"
+  splashBackgroundColor: "#FFFFFF"
   
 }
 

@@ -23,7 +23,10 @@ import {
   TargetIcon,
   QuestionMarkIcon,
   MagnifyingGlassIcon,
-  ExternalLinkIcon
+  ExternalLinkIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  LayersIcon
 } from "@radix-ui/react-icons";
 
 // --- INTERFACES ---
@@ -47,6 +50,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const { sendCallsAsync } = useSendCalls(); 
   const { data: capabilities } = useCapabilities();
 
+  // --- STATE ---
   const [activeTab, setActiveTab] = useState("scanning");
   const [allowances, setAllowances] = useState<AllowanceItem[]>([]);
   const [spendPermissions, setSpendPermissions] = useState<SpendPermission[]>([]);
@@ -56,7 +60,17 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [userProfile, setUserProfile] = useState<FarcasterUser | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showEvmList, setShowEvmList] = useState(false); // State untuk dropdown EVM
   const itemsPerPage = 10;
+
+  // --- WALLET CONNECTORS LOGIC ---
+  const baseConnector = connectors.find(
+    (c) => c.id === 'coinbaseWalletSDK' || c.id === 'baseAccount'
+  );
+
+  const evmConnectors = connectors.filter(
+    (c) => c.id !== 'farcaster' && c.id !== 'coinbaseWalletSDK' && c.id !== 'baseAccount'
+  );
 
   // --- TOUR STATE ---
   const [showTour, setShowTour] = useState(false);
@@ -75,6 +89,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
     return capabilities[8453]?.atomicBatch?.supported === true;
   }, [capabilities]);
 
+  // --- FUNCTIONS ---
   const handleShare = useCallback(() => {
     sdk.actions.composeCast({
       text: `🛡️ My wallet health score is ${walletScore}/100! Scan yours with Royal Servant.`,
@@ -85,13 +100,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const handlePinApp = useCallback(async () => {
     try { await sdk.actions.addFrame(); } catch (err) { console.error("Pin failed", err); }
   }, []);
-
-  const handleManualConnect = useCallback(() => {
-    const fc = connectors.find(c => c.id === 'farcaster');
-    const cb = connectors.find(c => c.id === 'coinbaseWalletSDK');
-    const target = fc || cb || connectors[0];
-    if (target) connect({ connector: target });
-  }, [connectors, connect]);
 
   const loadSecurityData = useCallback(async () => {
     if (!address) return;
@@ -194,25 +202,89 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
 
   const totalPages = Math.ceil(allowances.length / itemsPerPage);
 
+  // --- CONNECT SCREEN ---
   if (!isConnected) {
     return (
       <div className={`max-w-xl mx-auto min-h-screen flex flex-col items-center justify-center p-8 transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
-        <div className="text-center space-y-6">
+        <div className="text-center w-full max-w-xs space-y-6">
           <div className="relative w-20 h-20 mx-auto mb-8 bg-[#1A1A1A] border-2 border-[#D4AF37] p-5 rounded-full flex items-center justify-center shadow-2xl">
             <StarIcon width={32} height={32} className="text-[#D4AF37]" />
           </div>
-          <h2 className="text-4xl font-black italic uppercase leading-tight">Protect Your<br/>Wallet</h2>
-          <button onClick={handleManualConnect} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase shadow-xl active:scale-95 transition-all">
-            <EnterIcon /> Enter Wallet
-          </button>
+          <h2 className="text-4xl font-black italic uppercase leading-tight mb-8">Protect Your<br/>Wallet</h2>
+          
+          <div className="space-y-4">
+            {/* OPTION 1: BASE SMART WALLET (RECOMMENDED) */}
+            {baseConnector && (
+              <button 
+                onClick={() => connect({ connector: baseConnector })}
+                className="w-full flex items-center justify-between p-4 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/30 rounded-2xl transition-all group active:scale-95"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                    <TargetIcon width={24} height={24} />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-black text-sm text-blue-400 uppercase italic tracking-tight">Base Smart Wallet</div>
+                    <div className="text-[9px] text-blue-300/60 font-bold uppercase tracking-widest">Recommended</div>
+                  </div>
+                </div>
+              </button>
+            )}
+
+            {/* OPTION 2: EVM WALLET (DROPDOWN) */}
+            <div className={`border rounded-2xl overflow-hidden transition-all ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-zinc-200'}`}>
+              <button 
+                onClick={() => setShowEvmList(!showEvmList)}
+                className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${theme === 'dark' ? 'bg-white/5 text-[#D4AF37]' : 'bg-zinc-100 text-[#D4AF37]'}`}>
+                    <EnterIcon width={24} height={24} />
+                  </div>
+                  <div className="text-left">
+                    <div className={`font-black text-sm uppercase italic ${theme === 'dark' ? 'text-zinc-200' : 'text-zinc-700'}`}>EVM Wallet</div>
+                    <div className="text-[9px] text-zinc-500 font-bold uppercase">Metamask, Rainbow, etc</div>
+                  </div>
+                </div>
+                {showEvmList ? <ChevronUpIcon width={20} height={20} className="text-zinc-500" /> : <ChevronDownIcon width={20} height={20} className="text-zinc-500" />}
+              </button>
+
+              {/* EXTENSION LIST (Visible if clicked) */}
+              {showEvmList && (
+                <div className={`p-2 space-y-1 border-t ${theme === 'dark' ? 'bg-black/40 border-white/5' : 'bg-zinc-50 border-zinc-100'}`}>
+                  {evmConnectors.length > 0 ? (
+                    evmConnectors.map((connector) => (
+                      <button
+                        key={connector.uid}
+                        onClick={() => connect({ connector })}
+                        className={`w-full p-3 text-[10px] font-black uppercase italic rounded-xl flex items-center justify-center gap-2 border transition-all ${
+                          theme === 'dark' 
+                            ? 'bg-[#111] border-white/5 hover:bg-[#D4AF37] hover:text-black text-white' 
+                            : 'bg-white border-zinc-200 hover:bg-[#D4AF37] hover:text-black text-zinc-700'
+                        }`}
+                      >
+                        {connector.name}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="p-3 text-[9px] font-bold uppercase text-center opacity-30 italic">
+                      No other wallets detected.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
+  // --- MAIN APP RENDER ---
   return (
     <div className={`max-w-xl mx-auto pb-[calc(14rem+env(safe-area-inset-bottom))] min-h-screen font-sans transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
       
+      {/* ONBORDA-STYLE TOUR OVERLAY */}
       {showTour && (
         <div className="fixed inset-0 z-[1000] flex flex-col items-center justify-center pointer-events-none">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] pointer-events-auto" onClick={() => setShowTour(false)} />
@@ -224,7 +296,9 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
             <p className="text-[10px] font-bold leading-relaxed opacity-90 italic mb-5 text-white">{tourData[tourStep].desc}</p>
             <div className="flex gap-2">
               <button onClick={() => { setShowTour(false); localStorage.setItem("hasSeenRoyalTour", "true"); }} className="px-3 py-2 text-[8px] font-black uppercase opacity-40 text-white">Skip</button>
-              <button onClick={handleTourNext} className="flex-1 py-3 bg-[#D4AF37] text-black rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95">{tourStep === tourData.length - 1 ? "Finish" : "Next"}</button>
+              <button onClick={handleTourNext} className="flex-1 py-3 bg-[#D4AF37] text-black rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all">
+                {tourStep === tourData.length - 1 ? "Finish" : "Next Step"}
+              </button>
             </div>
             <div className={`absolute left-1/2 -translate-x-1/2 w-4 h-4 bg-[#1a1a1a] border-l-2 border-t-2 border-[#D4AF37] rotate-45 ${tourData[tourStep].pos === 'header' ? 'top-full -translate-y-2' : 'bottom-full translate-y-2 rotate-[225deg]'}`} />
           </div>
@@ -269,7 +343,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           <div className="space-y-2">
              {allowances.length > 0 && (
                <div className="flex justify-end px-2 mb-2">
-                  <button onClick={() => setSelectedIds(selectedIds.size === allowances.length ? new Set() : new Set(allowances.map(a => a.id)))} className="text-[9px] font-black text-[#D4AF37] uppercase underline italic tracking-tighter">
+                  <button onClick={() => setSelectedIds(selectedIds.size === allowances.length ? new Set() : new Set(allowances.map(a => a.id)))} className="text-[9px] font-black text-[#D4AF37] uppercase underline italic tracking-tighter transition-opacity active:opacity-50">
                      {selectedIds.size === allowances.length ? "Deselect All" : "Select All"}
                   </button>
                </div>
@@ -290,10 +364,10 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
               <div className="relative w-16 h-16 mx-auto mb-4">
                  {userProfile?.pfpUrl ? <img src={userProfile.pfpUrl} alt="pfp" className="w-full h-full rounded-full border-2 border-[#D4AF37]" /> : <div className="w-full h-full rounded-full bg-[#D4AF37]/10 flex items-center justify-center text-[#D4AF37] border-2 border-[#D4AF37]"><StarIcon width={24}/></div>}
               </div>
-              <h2 className="text-xl font-black italic uppercase mb-1">{userProfile?.displayName || 'Royal User'}</h2>
+              <h2 className="text-xl font-black italic uppercase mb-1 tracking-tighter">{userProfile?.displayName || 'Royal User'}</h2>
               <div className="flex flex-col gap-2 max-w-[150px] mx-auto mt-6">
-                <div className="flex justify-between text-[10px] font-black italic"><span>HEALTH</span><span className={walletScore === 100 ? "text-green-500" : "text-[#D4AF37]"}>{walletScore}%</span></div>
-                <div className="w-full bg-gray-500/20 h-1.5 rounded-full overflow-hidden"><div className="bg-[#D4AF37] h-full transition-all duration-1000" style={{ width: `${walletScore}%` }} /></div>
+                <div className="flex justify-between text-[10px] font-black italic text-left"><span>HEALTH</span><span className={walletScore === 100 ? "text-green-500" : "text-[#D4AF37]"}>{walletScore}%</span></div>
+                <div className="w-full bg-gray-500/20 h-1.5 rounded-full overflow-hidden text-left"><div className="bg-[#D4AF37] h-full transition-all duration-1000" style={{ width: `${walletScore}%` }} /></div>
               </div>
               <button onClick={handleShare} className="mt-8 px-8 py-2.5 bg-[#D4AF37] text-black rounded-full font-black text-[9px] uppercase flex items-center gap-2 mx-auto active:scale-95 shadow-lg"><Share1Icon width={12} /> Share Health</button>
             </div>
@@ -315,15 +389,26 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </div>
         )}
 
+        {/* PAGINATION */}
         {totalPages > 1 && (activeTab === 'scanning' || activeTab === 'revoke') && (
           <div className="flex justify-center items-center gap-4 py-8 mb-24 relative z-10">
-            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] disabled:opacity-20"><ChevronLeftIcon/></button>
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] disabled:opacity-20 active:scale-90 transition-all"><ChevronLeftIcon/></button>
             <span className="text-[10px] font-black">{currentPage} / {totalPages}</span>
-            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] disabled:opacity-20"><ChevronRightIcon/></button>
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] disabled:opacity-20 active:scale-90 transition-all"><ChevronRightIcon/></button>
           </div>
         )}
       </div>
 
+      {/* PURIFY BUTTON */}
+      {selectedIds.size > 0 && activeTab === "revoke" && (
+        <div className="fixed bottom-[calc(7.2rem+env(safe-area-inset-bottom))] left-0 right-0 px-10 max-w-[200px] mx-auto z-[101] animate-in slide-in-from-bottom-6">
+          <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-4 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 transition-all uppercase italic">
+            {isLoading ? <UpdateIcon className="animate-spin" /> : `Purify ${selectedIds.size}`}
+          </button>
+        </div>
+      )}
+
+      {/* NAV BAR */}
       <div className={`fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[90%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-[100] ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
         {[
           { id: 'scanning', icon: <EyeOpenIcon width={18}/>, label: 'Gatotkaca' },

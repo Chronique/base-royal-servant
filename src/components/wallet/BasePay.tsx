@@ -153,7 +153,7 @@ export function BasePay() {
   const [amount, setAmount] = useState("5.00");
   
   // dylsteck.base.eth
-  const recipient = "0x8342A48694A74044116F330db5050a267b28dD85";
+  const recipient = "0x4fba95e4772be6d37a0c931D00570Fe2c9675524";
 
   const handlePay = async () => {
     try {
