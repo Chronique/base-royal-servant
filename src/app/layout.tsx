@@ -13,10 +13,7 @@ export const metadata: Metadata = {
     url: METADATA.homeUrl,
     siteName: METADATA.name
   },
-  // --- TAMBAHKAN BAGIAN INI UNTUK VERIFIKASI BASE ---
-  other: {
-    'base:app_id': '6967e4a50c770beef04862b3',
-  },
+  
 };
 
 export default function RootLayout({
