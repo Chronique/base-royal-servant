@@ -98,8 +98,16 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   }, [walletScore]);
 
   const handlePinApp = useCallback(async () => {
-    try { await sdk.actions.addFrame(); } catch (err) { console.error("Pin failed", err); }
-  }, []);
+  try {
+    // Meminta pengguna untuk menambahkan aplikasi dan mengaktifkan notifikasi
+    await sdk.actions.addMiniApp();
+    
+      console.log("The application has been successfully added and notifications are active.");
+    
+  } catch (err) {
+    console.error("Failed to add application:", err);
+  }
+}, []);
 
   const loadSecurityData = useCallback(async () => {
     if (!address) return;

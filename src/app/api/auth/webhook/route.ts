@@ -1,6 +1,6 @@
 // src/app/api/auth/webhook/route.ts
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "~/lib/supabase"; // Pastikan path ini benar
+import { supabaseAdmin } from "~/lib/supabase"; // Path sudah benar sesuai struktur Anda
 
 export const dynamic = "force-dynamic";
 
@@ -8,18 +8,24 @@ export async function POST(req: Request) {
   try {
     const data = await req.json();
     
-    // Debug untuk melihat data asli di Vercel Logs
+    // Debug untuk melihat data asli (Sangat membantu untuk verifikasi struktur)
     console.log("Webhook Received:", JSON.stringify(data, null, 2));
 
-    const fid = data.fid;
-    // Farcaster mengirim token bisa di root atau di dalam objek event
-    const notificationDetails = data.notificationDetails || data.event?.notificationDetails;
+    // Event Farcaster biasanya dibungkus dalam objek 'event'
+    const event = data.event;
+    const fid = event?.fid || data.fid;
+    const notificationDetails = event?.notificationDetails || data.notificationDetails;
 
+    // Pastikan kita hanya memproses jika user mengaktifkan notifikasi
     if (fid && notificationDetails) {
-      // Simpan/Update token ke tabel notifications
+      // Simpan FID, Token, dan URL ke Supabase
       const { error } = await supabaseAdmin.from('notifications').upsert({
-           fid: fid,
-          updated_at: new Date().toISOString()
+        fid: fid,
+        token: notificationDetails.token, // WAJIB: Token unik untuk kirim notif
+        url: notificationDetails.url,     // WAJIB: Host URL notifikasi Farcaster
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'fid' // Pastikan melakukan update jika FID sudah ada
       });
 
       if (error) {
@@ -27,7 +33,14 @@ export async function POST(req: Request) {
         throw error;
       }
       
-      console.log(`Success: Token updated for FID ${fid}`);
+      console.log(`Success: Notification token saved for FID ${fid}`);
+      return NextResponse.json({ success: true });
+    }
+
+    // Jika event adalah penonaktifan notifikasi (notifications_disabled)
+    if (event?.type === "notifications_disabled") {
+      await supabaseAdmin.from('notifications').delete().eq('fid', fid);
+      console.log(`Success: Notification disabled and removed for FID ${fid}`);
       return NextResponse.json({ success: true });
     }
 
