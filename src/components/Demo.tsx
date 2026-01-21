@@ -156,20 +156,36 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   };
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        sdk.actions.ready();
-        const context = await sdk.context;
-        if (context?.user) setUserProfile(context.user as FarcasterUser); 
-      } catch (e) { console.log("Standard Browser Detected"); }
-      
-      if (isConnected) {
-        loadSecurityData();
-        if (!localStorage.getItem("hasSeenRoyalTour")) setShowTour(true);
-      }
-    };
-    init();
-  }, [isConnected, loadSecurityData]);
+  // 1. Langsung panggil ready agar splash screen hilang
+  const signalReady = async () => {
+    try {
+      await sdk.actions.ready(); 
+      console.log("Farcaster SDK Ready");
+    } catch (e) {
+      console.error("SDK Ready Error:", e);
+    }
+  };
+  signalReady();
+
+  // 2. Logika inisialisasi konteks dan data (dipisah)
+  const initContext = async () => {
+    try {
+      const context = await sdk.context;
+      if (context?.user) setUserProfile(context.user as FarcasterUser);
+    } catch (e) {
+      console.log("Not running in Farcaster environment");
+    }
+  };
+  initContext();
+}, []); // Jalankan hanya sekali saat mount awal
+
+// Efek terpisah untuk memuat data keamanan saat dompet terhubung
+useEffect(() => {
+  if (isConnected) {
+    loadSecurityData();
+    if (!localStorage.getItem("hasSeenRoyalTour")) setShowTour(true);
+  }
+}, [isConnected, loadSecurityData]);
 
   const handleTourNext = () => {
     if (tourStep < tourData.length - 1) {
