@@ -43,7 +43,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "fc:frame": JSON.stringify(frame),
       "fc:frame:image": METADATA.bannerImageUrl,
       "fc:frame:cast_action:canonical_domain": CANONICAL_DOMAIN,
-      
+      'base:app_id': '6967e4a50c770beef04862b3',
 
     },
   };
