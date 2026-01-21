@@ -15,7 +15,7 @@ export async function GET() {
       iconUrl: METADATA.iconImageUrl,
       homeUrl: METADATA.homeUrl,
       imageUrl: METADATA.bannerImageUrl,
-      splashImageUrl: METADATA.iconImageUrl,
+      splashImageUrl: METADATA.splashImageUrl,
       splashBackgroundColor: METADATA.splashBackgroundColor,
       description: METADATA.description,
       ogTitle: METADATA.name,
