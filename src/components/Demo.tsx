@@ -47,7 +47,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const { sendCallsAsync } = useSendCalls(); 
   const { data: capabilities } = useCapabilities();
 
-  // --- STATE ---
   const [activeTab, setActiveTab] = useState("scanning");
   const [allowances, setAllowances] = useState<AllowanceItem[]>([]);
   const [spendPermissions, setSpendPermissions] = useState<SpendPermission[]>([]);
@@ -76,7 +75,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
     return capabilities[8453]?.atomicBatch?.supported === true;
   }, [capabilities]);
 
-  // --- FUNCTIONS ---
   const handleShare = useCallback(() => {
     sdk.actions.composeCast({
       text: `🛡️ My wallet health score is ${walletScore}/100! Scan yours with Royal Servant.`,
@@ -89,7 +87,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   }, []);
 
   const handleManualConnect = useCallback(() => {
-    // Priority: Farcaster -> Coinbase -> Injected (MetaMask)
     const fc = connectors.find(c => c.id === 'farcaster');
     const cb = connectors.find(c => c.id === 'coinbaseWalletSDK');
     const target = fc || cb || connectors[0];
@@ -156,36 +153,28 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   };
 
   useEffect(() => {
-  // 1. Langsung panggil ready agar splash screen hilang
-  const signalReady = async () => {
-    try {
-      await sdk.actions.ready(); 
-      console.log("Farcaster SDK Ready");
-    } catch (e) {
-      console.error("SDK Ready Error:", e);
-    }
-  };
-  signalReady();
+    const signalReady = async () => {
+      try {
+        await sdk.actions.ready(); 
+      } catch (e) { console.error(e); }
+    };
+    signalReady();
 
-  // 2. Logika inisialisasi konteks dan data (dipisah)
-  const initContext = async () => {
-    try {
-      const context = await sdk.context;
-      if (context?.user) setUserProfile(context.user as FarcasterUser);
-    } catch (e) {
-      console.log("Not running in Farcaster environment");
-    }
-  };
-  initContext();
-}, []); // Jalankan hanya sekali saat mount awal
+    const initContext = async () => {
+      try {
+        const context = await sdk.context;
+        if (context?.user) setUserProfile(context.user as FarcasterUser);
+      } catch (e) { console.log("Standard Browser"); }
+    };
+    initContext();
+  }, []);
 
-// Efek terpisah untuk memuat data keamanan saat dompet terhubung
-useEffect(() => {
-  if (isConnected) {
-    loadSecurityData();
-    if (!localStorage.getItem("hasSeenRoyalTour")) setShowTour(true);
-  }
-}, [isConnected, loadSecurityData]);
+  useEffect(() => {
+    if (isConnected) {
+      loadSecurityData();
+      if (!localStorage.getItem("hasSeenRoyalTour")) setShowTour(true);
+    }
+  }, [isConnected, loadSecurityData]);
 
   const handleTourNext = () => {
     if (tourStep < tourData.length - 1) {
@@ -213,7 +202,7 @@ useEffect(() => {
             <StarIcon width={32} height={32} className="text-[#D4AF37]" />
           </div>
           <h2 className="text-4xl font-black italic uppercase leading-tight">Protect Your<br/>Wallet</h2>
-          <button onClick={handleManualConnect} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase shadow-xl flex items-center gap-2 active:scale-95 transition-all">
+          <button onClick={handleManualConnect} className="mt-8 px-10 py-3.5 bg-[#D4AF37] text-black rounded-full font-black text-xs uppercase shadow-xl active:scale-95 transition-all">
             <EnterIcon /> Enter Wallet
           </button>
         </div>
@@ -224,19 +213,18 @@ useEffect(() => {
   return (
     <div className={`max-w-xl mx-auto pb-[calc(14rem+env(safe-area-inset-bottom))] min-h-screen font-sans transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
       
-      {/* ONBORDA-STYLE TOUR */}
       {showTour && (
         <div className="fixed inset-0 z-[1000] flex flex-col items-center justify-center pointer-events-none">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] pointer-events-auto" onClick={() => setShowTour(false)} />
           <div className={`relative z-[1001] pointer-events-auto w-[85%] max-w-xs bg-[#1a1a1a]/95 p-6 rounded-[2rem] border-2 border-[#D4AF37] shadow-[0_0_40px_rgba(212,175,55,0.4)] transform transition-all duration-300 ${tourData[tourStep].pos === 'header' ? '-translate-y-24' : 'translate-y-24'}`}>
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-[#D4AF37] text-black rounded-full flex items-center justify-center text-xl"><StarIcon /></div>
-              <h3 className="text-lg font-black italic uppercase text-[#D4AF37]">{tourData[tourStep].title}</h3>
+              <div className="w-10 h-10 bg-[#D4AF37] text-black rounded-full flex items-center justify-center text-xl shadow-lg"><StarIcon /></div>
+              <h3 className="text-lg font-black italic uppercase text-[#D4AF37] tracking-tight">{tourData[tourStep].title}</h3>
             </div>
             <p className="text-[10px] font-bold leading-relaxed opacity-90 italic mb-5 text-white">{tourData[tourStep].desc}</p>
             <div className="flex gap-2">
               <button onClick={() => { setShowTour(false); localStorage.setItem("hasSeenRoyalTour", "true"); }} className="px-3 py-2 text-[8px] font-black uppercase opacity-40 text-white">Skip</button>
-              <button onClick={handleTourNext} className="flex-1 py-3 bg-[#D4AF37] text-black rounded-full text-[10px] font-black uppercase tracking-widest">{tourStep === tourData.length - 1 ? "Finish" : "Next"}</button>
+              <button onClick={handleTourNext} className="flex-1 py-3 bg-[#D4AF37] text-black rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95">{tourStep === tourData.length - 1 ? "Finish" : "Next"}</button>
             </div>
             <div className={`absolute left-1/2 -translate-x-1/2 w-4 h-4 bg-[#1a1a1a] border-l-2 border-t-2 border-[#D4AF37] rotate-45 ${tourData[tourStep].pos === 'header' ? 'top-full -translate-y-2' : 'bottom-full translate-y-2 rotate-[225deg]'}`} />
           </div>
@@ -257,7 +245,6 @@ useEffect(() => {
         <h1 className="text-4xl font-black italic tracking-tighter leading-none">{activeTab === 'score' ? walletScore : (activeTab === 'permissions' ? spendPermissions.length : allowances.length)}</h1>
       </div>
 
-      {/* CONTENT AREA */}
       <div className="px-4 mt-6">
         {activeTab === "scanning" && (
           <div className="space-y-2">
@@ -267,7 +254,10 @@ useEffect(() => {
                   <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-500/10 flex items-center justify-center">
                     {item.tokenLogo ? <img src={item.tokenLogo} alt="logo" className="w-full h-full object-cover" /> : <CircleIcon className="text-[#D4AF37]" />}
                   </div>
-                  <div className="text-left"><h4 className="font-black text-xs truncate max-w-[100px]">{item.tokenSymbol}</h4><p className="text-[8px] opacity-40 uppercase italic">Via: {item.spenderLabel}</p></div>
+                  <div className="overflow-hidden text-left">
+                    <h4 className="font-black text-xs truncate max-w-[100px]">{item.tokenSymbol}</h4>
+                    <p className="text-[8px] opacity-40 uppercase italic truncate">Via: {item.spenderLabel}</p>
+                  </div>
                 </div>
                 <div className="text-right"><p className="text-[10px] font-black">{item.amount}</p><p className={`text-[7px] font-bold uppercase ${item.risk === 'high' ? 'text-red-500' : 'text-green-500'}`}>{item.risk} risk</p></div>
               </div>
@@ -279,7 +269,7 @@ useEffect(() => {
           <div className="space-y-2">
              {allowances.length > 0 && (
                <div className="flex justify-end px-2 mb-2">
-                  <button onClick={() => setSelectedIds(selectedIds.size === allowances.length ? new Set() : new Set(allowances.map(a => a.id)))} className="text-[9px] font-black text-[#D4AF37] uppercase underline italic tracking-tighter active:opacity-50">
+                  <button onClick={() => setSelectedIds(selectedIds.size === allowances.length ? new Set() : new Set(allowances.map(a => a.id)))} className="text-[9px] font-black text-[#D4AF37] uppercase underline italic tracking-tighter">
                      {selectedIds.size === allowances.length ? "Deselect All" : "Select All"}
                   </button>
                </div>
@@ -311,8 +301,8 @@ useEffect(() => {
                 <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.2em] uppercase italic">My experimental miniapps</p>
                 <div className="grid gap-2">
                    {[
-                     { name: "TX-Checker", url: "https://tx-xhecker.vercel.app/", desc: "Check your transaction score" },
-                     { name: "Base Vote", url: "https://base-vote-alpha.vercel.app/", desc: "Onchain polls and community voting" },
+                     { name: "TX-Checker", url: "https://tx-xhecker.vercel.app/", desc: "Check your score" },
+                     { name: "Base Vote", url: "https://base-vote-alpha.vercel.app/", desc: "Onchain polls and vote" },
                      { name: "Base Dating", url: "https://base-dating.vercel.app/", desc: "Experimental dating onchain" }
                    ].map((app, i) => (
                      <a key={i} href={app.url} target="_blank" rel="noopener noreferrer" className={`p-4 rounded-[1.2rem] border flex justify-between items-center group transition-all ${theme === 'dark' ? 'bg-[#111] border-white/5 hover:bg-[#151515]' : 'bg-white border-gray-100 hover:border-[#D4AF37]'}`}>
@@ -325,7 +315,6 @@ useEffect(() => {
           </div>
         )}
 
-        {/* PAGINATION */}
         {totalPages > 1 && (activeTab === 'scanning' || activeTab === 'revoke') && (
           <div className="flex justify-center items-center gap-4 py-8 mb-24 relative z-10">
             <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] disabled:opacity-20"><ChevronLeftIcon/></button>
@@ -335,16 +324,6 @@ useEffect(() => {
         )}
       </div>
 
-      {/* REVOKE BUTTON */}
-      {selectedIds.size > 0 && activeTab === "revoke" && (
-        <div className="fixed bottom-[calc(7.2rem+env(safe-area-inset-bottom))] left-0 right-0 px-10 max-w-[200px] mx-auto z-[101]">
-          <button onClick={executeRevoke} className="w-full bg-[#1A1A1A] text-[#D4AF37] py-4 rounded-full font-black text-xs shadow-2xl border border-[#D4AF37] flex items-center justify-center gap-2 active:scale-95 uppercase italic">
-            {isLoading ? <UpdateIcon className="animate-spin" /> : `Purify ${selectedIds.size}`}
-          </button>
-        </div>
-      )}
-
-      {/* NAV BAR */}
       <div className={`fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[90%] max-w-sm border rounded-[1.8rem] p-1 shadow-2xl flex justify-around z-[100] ${theme === 'dark' ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-200'}`}>
         {[
           { id: 'scanning', icon: <EyeOpenIcon width={18}/>, label: 'Gatotkaca' },

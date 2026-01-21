@@ -1,6 +1,8 @@
 // src/app/api/auth/cron/remind/route.ts
 import { supabaseAdmin } from '~/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 const messages = [
   { title: "🛡️ Palace Guard Alert", body: "Greetings! It's time to sweep your wallet from unwanted permissions." },
   { title: "✨ Royal Purification", body: "A week has passed, my liege. Shall we cleanse your treasury today?" },
