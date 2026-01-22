@@ -4,9 +4,14 @@ import { supabaseAdmin } from '~/lib/supabase';
 export const dynamic = 'force-dynamic';
 
 const messages = [
-  { title: "🛡️ Palace Guard Alert", body: "Greetings! It's time to sweep your wallet from unwanted permissions." },
-  { title: "✨ Royal Purification", body: "A week has passed, my liege. Shall we cleanse your treasury today?" },
-  { title: "💂‍♂️ Servant's Duty", body: "Your wallet health is our priority. Let's perform the weekly security sweep!" }
+  { 
+    title: "🛡️ Weekly Security Sweep", 
+    body: "Greetings ${username}! It's a new week. Let's ensure your palace is safe from old token permissions." 
+  },
+  { 
+    title: "✨ Monday Purification", 
+    body: "My liege, would you like to start the week with a clean wallet? Arjuna is ready for a security check." 
+  }
 ];
 
 export async function GET(req: Request) {

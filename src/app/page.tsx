@@ -12,7 +12,7 @@ const frame = {
   version: "next",
   imageUrl: METADATA.bannerImageUrl,
   button: {
-    title: "Launch Shield",
+    title: "Revoke Arpovals",
     action: {
       type: "launch_frame",
       name: METADATA.name,
