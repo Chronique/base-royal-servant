@@ -1,3 +1,4 @@
+// src/app/page.tsx
 import { Metadata } from "next";
 import App from "./app";
 import { METADATA } from "~/lib/utils";
@@ -12,7 +13,7 @@ const frame = {
   version: "next",
   imageUrl: METADATA.bannerImageUrl,
   button: {
-    title: "Revoke Arpovals",
+    title: "Revoke Approvals",
     action: {
       type: "launch_frame",
       name: METADATA.name,
@@ -43,8 +44,9 @@ export async function generateMetadata(): Promise<Metadata> {
       "fc:frame": JSON.stringify(frame),
       "fc:frame:image": METADATA.bannerImageUrl,
       "fc:frame:cast_action:canonical_domain": CANONICAL_DOMAIN,
+      // WAJIB: Kunci agar tombol notifikasi/lonceng muncul di Warpcast
+      "fc:frame:manifest": `${METADATA.homeUrl}/.well-known/farcaster.json`, 
       'base:app_id': '6967e4a50c770beef04862b3',
-
     },
   };
 }

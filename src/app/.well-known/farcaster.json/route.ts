@@ -10,12 +10,12 @@ export async function GET() {
     frame: {
       version: "1",
       name: METADATA.name,
-      // Menambahkan App ID di level frame untuk tracking Farcaster/Base
-      appId: "6967e4a50c770beef04862b3", 
+      appId: "6967e4a50c770beef04862b3", // Sudah sinkron dengan page.tsx
       iconUrl: METADATA.iconImageUrl,
       homeUrl: METADATA.homeUrl,
       imageUrl: METADATA.bannerImageUrl,
-      splashImageUrl: METADATA.splashImageUrl,
+      // PERBAIKAN: Gunakan iconImageUrl karena splashImageUrl tidak ada di utils.ts
+      splashImageUrl: METADATA.iconImageUrl, 
       splashBackgroundColor: METADATA.splashBackgroundColor,
       description: METADATA.description,
       ogTitle: METADATA.name,
@@ -46,7 +46,7 @@ export async function GET() {
       "tags": ["base", "baseapp", "miniapp", "tools"]
     },
     baseBuilder: {
-      "builder": "bc_tvapjj4p", // Menambahkan ID di sini untuk integrasi Base Builder
+      "builder": "bc_tvapjj4p", 
       "allowedAddresses": ["0x4fba95e4772be6d37a0c931D00570Fe2c9675524"],
     }
   };
