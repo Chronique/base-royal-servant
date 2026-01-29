@@ -10,7 +10,7 @@ export async function GET() {
     frame: {
       version: "1",
       name: METADATA.name,
-      appId: "6967e4a50c770beef04862b3", // Sudah sinkron dengan page.tsx
+      appId: "6967e4a50c770beef04862b3", 
       iconUrl: METADATA.iconImageUrl,
       homeUrl: METADATA.homeUrl,
       imageUrl: METADATA.bannerImageUrl,
@@ -45,7 +45,7 @@ export async function GET() {
       ],
 
       "screenshotUrls": [
-      "revoke.png"
+      "https://base-royal-servant.vercel.app/revoke.png"
     ],
 
       "canonicalDomain": "base-royal-servant.vercel.app",

@@ -18,7 +18,6 @@ import {
   CircleIcon,
   BookmarkFilledIcon,
   EnterIcon,
-  ClockIcon,
   EyeOpenIcon,
   TargetIcon,
   QuestionMarkIcon,
@@ -26,7 +25,7 @@ import {
   ExternalLinkIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  LayersIcon
+  LayersIcon // Digunakan sebagai fallback ikon GitHub jika GitHubLogoIcon tidak tersedia
 } from "@radix-ui/react-icons";
 
 // --- INTERFACES ---
@@ -38,7 +37,13 @@ interface MoralisApproval {
 }
 
 interface SpendPermission {
-  id: string; spender: string; token: string; limit: string; period: string; expiresAt: string; status: 'active' | 'expired';
+  id: string; 
+  spender: string; 
+  token: string; 
+  limit: string; 
+  period: string; 
+  expiresAt: string; 
+  status: 'active' | 'expired';
 }
 
 interface FarcasterUser { fid: number; displayName?: string; pfpUrl?: string; }
@@ -60,7 +65,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [userProfile, setUserProfile] = useState<FarcasterUser | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [showEvmList, setShowEvmList] = useState(false); // State untuk dropdown EVM
+  const [showEvmList, setShowEvmList] = useState(false);
   const itemsPerPage = 10;
 
   // --- WALLET CONNECTORS LOGIC ---
@@ -79,7 +84,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const tourData = [
     { title: "Royal Header", tab: "scanning", desc: "Monitor health and manage settings (Pin, Refresh, Theme) here.", pos: "header", icon: <StarIcon /> },
     { title: "Gatotkaca", tab: "scanning", desc: "Guardian. View active approvals (Read-only).", pos: "nav", icon: <EyeOpenIcon /> },
-    { title: "Srikandi", tab: "permissions", desc: "Scout. Track automated Spend Permissions.", pos: "nav", icon: <MagnifyingGlassIcon /> },
+    { title: "Srikandi", tab: "permissions", desc: "Scout. Track automated Spend Permissions (common in games).", pos: "nav", icon: <MagnifyingGlassIcon /> },
     { title: "Arjuna", tab: "revoke", desc: "Archer. Revoke high-risk permissions.", pos: "nav", icon: <TargetIcon /> },
     { title: "Yudhistira", tab: "score", desc: "Pure. See final score and experimental apps.", pos: "nav", icon: <StarIcon /> }
   ];
@@ -98,16 +103,13 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   }, [walletScore]);
 
   const handlePinApp = useCallback(async () => {
-  try {
-    // Meminta pengguna untuk menambahkan aplikasi dan mengaktifkan notifikasi
-    await sdk.actions.addMiniApp();
-    
-      console.log("The application has been successfully added and notifications are active.");
-    
-  } catch (err) {
-    console.error("Failed to add application:", err);
-  }
-}, []);
+    try {
+      await sdk.actions.addMiniApp();
+      console.log("Application added successfully.");
+    } catch (err) {
+      console.error("Failed to add application:", err);
+    }
+  }, []);
 
   const loadSecurityData = useCallback(async () => {
     if (!address) return;
@@ -133,11 +135,12 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       }));
 
       setAllowances(enriched);
-      const totalIssues = enriched.length;
-      if (totalIssues === 0) setWalletScore(100);
-      else if (totalIssues > 10) setWalletScore(60);
-      else setWalletScore(80);
-    } catch (err) { console.error(err); } finally { setIsLoading(false); }
+      setWalletScore(enriched.length === 0 ? 100 : (enriched.length > 10 ? 60 : 80));
+    } catch (err) { 
+      console.error(err); 
+    } finally { 
+      setIsLoading(false); 
+    }
   }, [address]);
 
   const executeRevoke = async () => {
@@ -165,17 +168,15 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       }
       setSelectedIds(new Set());
       setTimeout(() => loadSecurityData(), 4000);
-    } catch (e) { console.error(e); } finally { setIsLoading(false); }
+    } catch (e) { 
+      console.error(e); 
+    } finally { 
+      setIsLoading(false); 
+    }
   };
 
   useEffect(() => {
-    const signalReady = async () => {
-      try {
-        await sdk.actions.ready(); 
-      } catch (e) { console.error(e); }
-    };
-    signalReady();
-
+    sdk.actions.ready();
     const initContext = async () => {
       try {
         const context = await sdk.context;
@@ -210,7 +211,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
 
   const totalPages = Math.ceil(allowances.length / itemsPerPage);
 
-  // --- CONNECT SCREEN ---
   if (!isConnected) {
     return (
       <div className={`max-w-xl mx-auto min-h-screen flex flex-col items-center justify-center p-8 transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
@@ -219,66 +219,28 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
             <StarIcon width={32} height={32} className="text-[#D4AF37]" />
           </div>
           <h2 className="text-4xl font-black italic uppercase leading-tight mb-8">Protect Your<br/>Wallet</h2>
-          
           <div className="space-y-4">
-            {/* OPTION 1: BASE SMART WALLET (RECOMMENDED) */}
             {baseConnector && (
-              <button 
-                onClick={() => connect({ connector: baseConnector })}
-                className="w-full flex items-center justify-between p-4 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/30 rounded-2xl transition-all group active:scale-95"
-              >
+              <button onClick={() => connect({ connector: baseConnector })} className="w-full flex items-center justify-between p-4 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/30 rounded-2xl transition-all group active:scale-95">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
-                    <TargetIcon width={24} height={24} />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-black text-sm text-blue-400 uppercase italic tracking-tight">Base Smart Wallet</div>
-                    <div className="text-[9px] text-blue-300/60 font-bold uppercase tracking-widest">Recommended</div>
-                  </div>
+                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform"><TargetIcon width={24} height={24} /></div>
+                  <div className="text-left"><div className="font-black text-sm text-blue-400 uppercase italic tracking-tight">Base Smart Wallet</div><div className="text-[9px] text-blue-300/60 font-bold uppercase tracking-widest">Recommended</div></div>
                 </div>
               </button>
             )}
-
-            {/* OPTION 2: EVM WALLET (DROPDOWN) */}
             <div className={`border rounded-2xl overflow-hidden transition-all ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-zinc-200'}`}>
-              <button 
-                onClick={() => setShowEvmList(!showEvmList)}
-                className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
-              >
+              <button onClick={() => setShowEvmList(!showEvmList)} className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${theme === 'dark' ? 'bg-white/5 text-[#D4AF37]' : 'bg-zinc-100 text-[#D4AF37]'}`}>
-                    <EnterIcon width={24} height={24} />
-                  </div>
-                  <div className="text-left">
-                    <div className={`font-black text-sm uppercase italic ${theme === 'dark' ? 'text-zinc-200' : 'text-zinc-700'}`}>EVM Wallet</div>
-                    <div className="text-[9px] text-zinc-500 font-bold uppercase">Metamask, Rainbow, etc</div>
-                  </div>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${theme === 'dark' ? 'bg-white/5 text-[#D4AF37]' : 'bg-zinc-100 text-[#D4AF37]'}`}><EnterIcon width={24} height={24} /></div>
+                  <div className="text-left"><div className={`font-black text-sm uppercase italic ${theme === 'dark' ? 'text-zinc-200' : 'text-zinc-700'}`}>EVM Wallet</div><div className="text-[9px] text-zinc-500 font-bold uppercase">Metamask, Rainbow, etc</div></div>
                 </div>
                 {showEvmList ? <ChevronUpIcon width={20} height={20} className="text-zinc-500" /> : <ChevronDownIcon width={20} height={20} className="text-zinc-500" />}
               </button>
-
-              {/* EXTENSION LIST (Visible if clicked) */}
               {showEvmList && (
                 <div className={`p-2 space-y-1 border-t ${theme === 'dark' ? 'bg-black/40 border-white/5' : 'bg-zinc-50 border-zinc-100'}`}>
-                  {evmConnectors.length > 0 ? (
-                    evmConnectors.map((connector) => (
-                      <button
-                        key={connector.uid}
-                        onClick={() => connect({ connector })}
-                        className={`w-full p-3 text-[10px] font-black uppercase italic rounded-xl flex items-center justify-center gap-2 border transition-all ${
-                          theme === 'dark' 
-                            ? 'bg-[#111] border-white/5 hover:bg-[#D4AF37] hover:text-black text-white' 
-                            : 'bg-white border-zinc-200 hover:bg-[#D4AF37] hover:text-black text-zinc-700'
-                        }`}
-                      >
-                        {connector.name}
-                      </button>
-                    ))
-                  ) : (
-                    <div className="p-3 text-[9px] font-bold uppercase text-center opacity-30 italic">
-                      No other wallets detected.
-                    </div>
-                  )}
+                  {evmConnectors.map((connector) => (
+                    <button key={connector.uid} onClick={() => connect({ connector })} className={`w-full p-3 text-[10px] font-black uppercase italic rounded-xl flex items-center justify-center gap-2 border transition-all ${theme === 'dark' ? 'bg-[#111] border-white/5 hover:bg-[#D4AF37] hover:text-black text-white' : 'bg-white border-zinc-200 hover:bg-[#D4AF37] hover:text-black text-zinc-700'}`}>{connector.name}</button>
+                  ))}
                 </div>
               )}
             </div>
@@ -288,11 +250,10 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
     );
   }
 
-  // --- MAIN APP RENDER ---
   return (
     <div className={`max-w-xl mx-auto pb-[calc(14rem+env(safe-area-inset-bottom))] min-h-screen font-sans transition-colors ${theme === 'dark' ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-[#3E2723]'}`}>
       
-      {/* ONBORDA-STYLE TOUR OVERLAY */}
+      {/* TOUR OVERLAY */}
       {showTour && (
         <div className="fixed inset-0 z-[1000] flex flex-col items-center justify-center pointer-events-none">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] pointer-events-auto" onClick={() => setShowTour(false)} />
@@ -317,7 +278,11 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       <div className={`sticky top-0 z-50 p-4 rounded-b-[1.5rem] shadow-2xl text-center border-b border-[#D4AF37] ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
         <div className="flex justify-between items-center mb-1">
           <p className="text-[8px] font-black text-[#D4AF37] tracking-[0.3em] uppercase italic">Royal Servant</p>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {/* LINK GITHUB */}
+            <a href="https://github.com/Chronique/base-royal-servant" target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] hover:bg-white/5 transition-colors">
+              <LayersIcon width={14} />
+            </a>
             <button onClick={() => { setTourStep(0); setActiveTab("scanning"); setShowTour(true); }} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]"><QuestionMarkIcon width={14}/></button>
             <button onClick={handlePinApp} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]"><BookmarkFilledIcon width={14}/></button>
             <button onClick={loadSecurityData} disabled={isLoading} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]"><UpdateIcon className={isLoading ? "animate-spin" : ""} width={14}/></button>
@@ -328,6 +293,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
       </div>
 
       <div className="px-4 mt-6">
+        {/* TAB GATOTKACA: SCANNING */}
         {activeTab === "scanning" && (
           <div className="space-y-2">
             {paginatedItems.map((item) => (
@@ -347,6 +313,34 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </div>
         )}
 
+        {/* TAB SRIKANDI: SPEND PERMISSIONS */}
+        {activeTab === "permissions" && (
+          <div className="space-y-4">
+            {spendPermissions.length > 0 ? (
+              spendPermissions.map((perm) => (
+                <div key={perm.id} className={`p-4 border rounded-[1.5rem] ${theme === 'dark' ? 'bg-[#151515] border-white/5' : 'bg-white border-gray-100'}`}>
+                   <div className="flex justify-between items-center">
+                      <div className="text-left">
+                         <h4 className="font-black text-xs uppercase italic tracking-tight">{perm.token}</h4>
+                         <p className="text-[8px] opacity-40 uppercase font-bold italic">Spender: {perm.spender.slice(0, 6)}...{perm.spender.slice(-4)}</p>
+                      </div>
+                      <div className="text-right">
+                         <p className="text-[10px] font-black text-[#D4AF37]">{perm.limit}</p>
+                         <p className="text-[7px] font-bold opacity-40 uppercase italic">Period: {perm.period}</p>
+                      </div>
+                   </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-20 opacity-30">
+                <MagnifyingGlassIcon width={30} className="mx-auto mb-2" />
+                <p className="text-[10px] font-black uppercase italic">No spend permissions found.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB ARJUNA: REVOKE */}
         {activeTab === "revoke" && (
           <div className="space-y-2">
              {allowances.length > 0 && (
@@ -366,6 +360,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           </div>
         )}
 
+        {/* TAB YUDHISTIRA: SCORE */}
         {activeTab === "score" && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <div className={`p-8 rounded-[2rem] border-2 border-dashed border-[#D4AF37]/20 text-center ${theme === 'dark' ? 'bg-[#151515]' : 'bg-white'}`}>
