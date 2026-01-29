@@ -1,3 +1,4 @@
+// src/app/.well-known/farcaster.json/route.ts
 import { METADATA } from "../../../lib/utils";
 
 export async function GET() {
@@ -10,40 +11,25 @@ export async function GET() {
     frame: {
       version: "1",
       name: METADATA.name,
-      appId: "6967e4a50c770beef04862b3", // Sudah sinkron dengan page.tsx
+      appId: "6967e4a50c770beef04862b3", 
       iconUrl: METADATA.iconImageUrl,
       homeUrl: METADATA.homeUrl,
       imageUrl: METADATA.bannerImageUrl,
-      // PERBAIKAN: Gunakan iconImageUrl karena splashImageUrl tidak ada di utils.ts
       splashImageUrl: METADATA.iconImageUrl, 
       splashBackgroundColor: METADATA.splashBackgroundColor,
       description: METADATA.description,
-      ogTitle: METADATA.name,
+      privacyPolicyUrl: METADATA.privacyUrl,
+      termsOfServiceUrl: METADATA.termsUrl,
       webhookUrl: "https://base-royal-servant.vercel.app/api/auth/webhook",
-      ogDescription: METADATA.description,
-      ogImageUrl: METADATA.bannerImageUrl,
-      primaryCategory: "developer-tools",
       requiredCapabilities: [
         "actions.ready",
+        "actions.addMiniApp",
         "actions.signIn", 
         "actions.openUrl",
-        "actions.sendToken",
-        "actions.viewToken", 
-        "actions.composeCast",
-        "actions.viewProfile",
-        "actions.setPrimaryButton",
-        "actions.swapToken",
-        "actions.close",
-        "actions.viewCast",
         "wallet.getEthereumProvider"
       ],
-      requiredChains: [
-        "eip155:8453", 
-        "eip155:10"
-      ],
+      requiredChains: ["eip155:8453"],
       "canonicalDomain": "base-royal-servant.vercel.app",
-      "noindex": false,
-      "tags": ["base", "baseapp", "miniapp", "tools"]
     },
     baseBuilder: {
       "builder": "bc_tvapjj4p", 

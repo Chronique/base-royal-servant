@@ -1,38 +1,34 @@
-// src/app/api/auth/route.ts
-import { Errors, createClient } from "@farcaster/quick-auth";
-import { NextRequest, NextResponse } from "next/server";
+// src/app/api/auth/webhook/route.ts
+import { NextResponse } from "next/server";
+import { supabaseAdmin } from "~/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
-const farcasterClient = createClient();
-
-export async function GET(request: NextRequest) {
-  const authorization = request.headers.get("Authorization");
-
-  if (!authorization || !authorization.startsWith("Bearer ")) {
-    return NextResponse.json({ message: "Missing token" }, { status: 401 });
-  }
-
+export async function POST(req: Request) {
   try {
-    const token = authorization.split(" ")[1];
-    const host = request.headers.get("host") || "";
-    
-    // Verifikasi JWT dari Farcaster
-    const payload = await farcasterClient.verifyJwt({
-      token,
-      domain: host,
-    });
+    const data = await req.json();
+    const event = data.event;
+    const fid = event?.fid || data.fid;
+    const notificationDetails = event?.notificationDetails || data.notificationDetails;
 
-    return NextResponse.json({
-      success: true,
-      user: {
-        fid: payload.sub,
-      },
-    });
-  } catch (e) {
-    if (e instanceof Errors.InvalidTokenError) {
-      return NextResponse.json({ message: "Invalid token" }, { status: 401 });
+    if (fid && notificationDetails) {
+      await supabaseAdmin.from('notifications').upsert({
+        fid: fid,
+        token: notificationDetails.token,
+        url: notificationDetails.url,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'fid' });
+
+      return NextResponse.json({ success: true });
     }
-    return NextResponse.json({ message: "Internal Error" }, { status: 500 });
+
+    if (event?.type === "notifications_disabled") {
+      await supabaseAdmin.from('notifications').delete().eq('fid', fid);
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ success: false }, { status: 400 });
+  } catch (err) {
+    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
   }
 }
