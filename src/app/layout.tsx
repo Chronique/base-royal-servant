@@ -27,6 +27,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* Hardcoded meta tag untuk verifikasi Base Build */}
+        <meta name="base:app_id" content="6967e4a50c770beef04862b3" />
         <meta property="base:app_id" content="6967e4a50c770beef04862b3" />
         </head>
        <body suppressHydrationWarning>
