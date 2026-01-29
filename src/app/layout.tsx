@@ -13,8 +13,10 @@ export const metadata: Metadata = {
     url: METADATA.homeUrl,
     siteName: METADATA.name
   },
-  
 };
+
+
+
 
 export default function RootLayout({
   children,
@@ -23,6 +25,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Hardcoded meta tag untuk verifikasi Base Build */}
+        <meta property="base:app_id" content="6967e4a50c770beef04862b3" />
+        </head>
        <body suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
