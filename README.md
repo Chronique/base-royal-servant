@@ -48,16 +48,21 @@ Ensure you have the latest version of Node.js and accounts for the following:
 * **Vercel**
  (recommended for deployment).
 
-Installation
+*Installation*
 ```Bash
 # Clone the repository
 git clone https://github.com/Chronique/base-royal-servant.git
 cd base-royal-servant
 ```
+
 ```bash
 # Install dependencies
 npm install
-Configuration
+```
+
+*Configuration*
+
+```bash
 Create a .env.local file in the root directory and add the following variables:
 ```
 
@@ -69,13 +74,13 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 CRON_SECRET=your_secret_for_cron_jobs
 ```
 ---
-**Development**
+*Development*
 ```Bash
 # Run the development server
 npm run dev
 ```
 ---
-##📡 Farcaster Integration
+## 📡 Farcaster Integration
 This app requires a valid manifest configuration for notification features and the "Pin App" button to appear:
 
 Manifest: Located at /.well-known/farcaster.json.
