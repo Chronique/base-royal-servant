@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import App from "./app";
 import { METADATA } from "~/lib/utils";
 
+// 1. Pastikan halaman bersifat dynamic agar hook OnchainKit/Wagmi tidak error saat build
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -28,6 +29,7 @@ const frame = {
   ],
 };
 
+// 2. Gunakan fungsi generateMetadata untuk menggabungkan semua tag 'other'
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: METADATA.name,
@@ -38,7 +40,7 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [METADATA.bannerImageUrl],
       url: METADATA.homeUrl,
     },
-    other: {
+     other: {
       "fc:frame": JSON.stringify(frame),
       "fc:frame:image": METADATA.bannerImageUrl,
       "fc:frame:cast_action:canonical_domain": CANONICAL_DOMAIN,
