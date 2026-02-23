@@ -25,7 +25,7 @@ import {
   ExternalLinkIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  LayersIcon // Digunakan sebagai fallback ikon GitHub jika GitHubLogoIcon tidak tersedia
+  GitHubLogoIcon // Digunakan sebagai fallback ikon GitHub jika GitHubLogoIcon tidak tersedia
 } from "@radix-ui/react-icons";
 
 // --- INTERFACES ---
@@ -281,7 +281,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           <div className="flex gap-2 items-center">
             {/* LINK GITHUB */}
             <a href="https://github.com/Chronique/base-royal-servant" target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] hover:bg-white/5 transition-colors">
-              <LayersIcon width={14} />
+              <GitHubLogoIcon width={14} />
             </a>
             <button onClick={() => { setTourStep(0); setActiveTab("scanning"); setShowTour(true); }} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]"><QuestionMarkIcon width={14}/></button>
             <button onClick={handlePinApp} className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37]"><BookmarkFilledIcon width={14}/></button>
