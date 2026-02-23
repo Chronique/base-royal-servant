@@ -13,6 +13,10 @@ export const metadata: Metadata = {
     url: METADATA.homeUrl,
     siteName: METADATA.name
   },
+  other: {
+    // Talent Protocol domain verification
+    "talentapp:project_verification": "74c6887ee43e2141f27949c613ec28e0fa9fabcf3ad55a2f3d191278f70108b0934aa63c6df19f25e72080c9b83212cefcd5c7a107d5263ba16f1361ec135127",
+  },
 };
 
 

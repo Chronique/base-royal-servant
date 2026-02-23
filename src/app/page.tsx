@@ -2,10 +2,13 @@
 import { Metadata } from "next";
 import App from "./app";
 import { METADATA } from "~/lib/utils";
+import { Attribution } from "ox/erc8021";
 
 // 1. Pastikan halaman bersifat dynamic agar hook OnchainKit/Wagmi tidak error saat build
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+const DATA_SUFFIX = Attribution.toDataSuffix({ codes: ["bc_oax2pvx6"] });
 
 const CANONICAL_DOMAIN = "base-royal-servant.vercel.app"; 
 
@@ -46,6 +49,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "fc:frame:cast_action:canonical_domain": CANONICAL_DOMAIN,
       // Kunci untuk memunculkan tombol lonceng notifikasi
       "fc:frame:manifest": `${METADATA.homeUrl}/.well-known/farcaster.json`, 
+      "builder": "bc_oax2pvx6",
       'base:app_id': '6967e4a50c770beef04862b3',
     },
   };
