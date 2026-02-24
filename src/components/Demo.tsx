@@ -7,6 +7,7 @@ import { useAccount, useConnect } from "wagmi";
 import { useSendCalls, useCapabilities } from 'wagmi/experimental';
 import { AllowanceCard, type AllowanceItem } from "./AllowanceCard"; 
 import { encodeFunctionData, type Address, type Hex } from 'viem';
+import { Attribution } from "ox/erc8021"; // ✅ Import ERC-8021
 import { 
   StarIcon, 
   UpdateIcon, 
@@ -25,8 +26,11 @@ import {
   ExternalLinkIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  GitHubLogoIcon // Digunakan sebagai fallback ikon GitHub jika GitHubLogoIcon tidak tersedia
+  GitHubLogoIcon
 } from "@radix-ui/react-icons";
+
+// ✅ ERC-8021 attribution untuk Royal Servant
+const DATA_SUFFIX = Attribution.toDataSuffix({ codes: ["bc_oax2pvx6"] });
 
 // --- INTERFACES ---
 interface MoralisApproval {
@@ -89,9 +93,17 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
     { title: "Yudhistira", tab: "score", desc: "Pure. See final score and experimental apps.", pos: "nav", icon: <StarIcon /> }
   ];
 
+  // ✅ Cek apakah wallet support atomic batch (EIP-5792)
   const supportsBatching = useMemo(() => {
     if (!capabilities || !capabilities[8453]) return false;
     return capabilities[8453]?.atomicBatch?.supported === true;
+  }, [capabilities]);
+
+  // ✅ Cek apakah wallet support paymasterService untuk dataSuffix
+  const supportsEIP5792 = useMemo(() => {
+    if (!capabilities || !capabilities[8453]) return false;
+    const caps = capabilities[8453];
+    return !!(caps?.atomicBatch?.supported || caps?.paymasterService?.supported);
   }, [capabilities]);
 
   // --- FUNCTIONS ---
@@ -105,7 +117,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
   const handlePinApp = useCallback(async () => {
     try {
       await sdk.actions.addMiniApp();
-      console.log("Application added successfully.");
     } catch (err) {
       console.error("Failed to add application:", err);
     }
@@ -159,13 +170,31 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
           : encodeFunctionData({ abi: [{ name: 'setApprovalForAll', type: 'function', inputs: [{ name: 'operator', type: 'address' }, { name: 'approved', type: 'bool' }], outputs: [] }], functionName: 'setApprovalForAll', args: [item.spender as Address, false] }),
       }));
 
+      // ✅ Tambah dataSuffix untuk ERC-8021 attribution
+      const capabilities = supportsEIP5792 
+        ? { dataSuffix: DATA_SUFFIX } 
+        : undefined;
+
       if (supportsBatching) {
-        await sendCallsAsync({ calls: calls as unknown as ContractCall[] });
+        // Batch semua revoke sekaligus (smart wallet)
+        await sendCallsAsync({ 
+          calls: calls as unknown as ContractCall[],
+          capabilities,
+        });
       } else {
+        // Satu per satu untuk wallet biasa
         for (const call of calls) {
-          try { await sendCallsAsync({ calls: [call] as unknown as ContractCall[] }); } catch (e) { console.error(e); }
+          try { 
+            await sendCallsAsync({ 
+              calls: [call] as unknown as ContractCall[],
+              capabilities,
+            }); 
+          } catch (e) { 
+            console.error(e); 
+          }
         }
       }
+
       setSelectedIds(new Set());
       setTimeout(() => loadSecurityData(), 4000);
     } catch (e) { 
@@ -232,7 +261,7 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
               <button onClick={() => setShowEvmList(!showEvmList)} className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${theme === 'dark' ? 'bg-white/5 text-[#D4AF37]' : 'bg-zinc-100 text-[#D4AF37]'}`}><EnterIcon width={24} height={24} /></div>
-                  <div className="text-left"><div className={`font-black text-sm uppercase italic ${theme === 'dark' ? 'text-zinc-200' : 'text-zinc-700'}`}>EVM Wallet</div><div className="text-[9px] text-zinc-500 font-bold uppercase">Metamask, Rainbow, etc</div></div>
+                  <div className="text-left"><div className={`font-black text-sm uppercase italic ${theme === 'dark' ? 'text-zinc-200' : 'text-zinc-700'}`}>EVM Wallet</div><div className="text-[9px] text-zinc-500 font-bold uppercase">Metamask, Rainbow, dll</div></div>
                 </div>
                 {showEvmList ? <ChevronUpIcon width={20} height={20} className="text-zinc-500" /> : <ChevronDownIcon width={20} height={20} className="text-zinc-500" />}
               </button>
@@ -279,7 +308,6 @@ export const Demo = ({ userFid }: { userFid?: number }) => {
         <div className="flex justify-between items-center mb-1">
           <p className="text-[8px] font-black text-[#D4AF37] tracking-[0.3em] uppercase italic">Royal Servant</p>
           <div className="flex gap-2 items-center">
-            {/* LINK GITHUB */}
             <a href="https://github.com/Chronique/base-royal-servant" target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full bg-gray-500/10 text-[#D4AF37] hover:bg-white/5 transition-colors">
               <GitHubLogoIcon width={14} />
             </a>
